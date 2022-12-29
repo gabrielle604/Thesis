@@ -6,6 +6,7 @@ output:
   html_document:
     code_folding: hide
 ---
+# Socio-demographic Patterning of Microplastic Burden in the U.S.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE,message=FALSE,warning = FALSE,results=FALSE)
@@ -18,6 +19,12 @@ library(knitr) # used to make table
 library(car) # has leveneTest 
 library(foreign) # to read in NHANES data
 library(rstanarm) # for the model fitting
+library(jtools) # Load jtools, for forest plots
+library(sandwich) # needed for robust standard errors in forest plot
+library(huxtable) # needed to be able to export table of forest plot values
+library(broom.mixed) # used in making tables
+library(visdat)
+library(ggplot2)
 ```
 
 ## Load in the data: years 2001-2016
@@ -125,7 +132,6 @@ Original:
 - URXMEP = mono-ethyl phthalate (ng/mL)
 
 ## Household reference person's education level
-
 ```{r}
 hist(nhanes$DMDHREDU)
 
@@ -136,6 +142,46 @@ nhanes$edu_ref = factor(ifelse(nhanes$DMDHREDU %in% 1:4,"partial college and bel
 summary(nhanes$edu_ref)
 
 ```
+
+## Household reference person's spouse's education level
+```{r}
+hist(nhanes$DMDHSEDU)
+
+# add "edu_spouse_ref" to "nhanes" 
+nhanes$edu_spouse_ref = factor(ifelse(nhanes$DMDHSEDU %in% 1:4,"partial college and below",
+                         ifelse(nhanes$DMDHSEDU==5,"college and beyond",NA)),
+                  levels=c("partial college and below","college and beyond"))
+summary(nhanes$edu_spouse_ref)
+```
+
+## Highest grade level of education completed by participants 6-19 y.o.
+```{r}
+hist(nhanes$DMDEDUC3)
+
+# add "edu_child_participants" to "nhanes" 
+nhanes$edu_child_participants = factor(ifelse(nhanes$DMDEDUC3 %in% 0:8,"primary",
+                         ifelse(nhanes$DMDEDUC3 %in% 9:15,"secondary",NA)),
+                  levels=c("primary","secondary"))
+summary(nhanes$edu_child_participants)
+
+## not a good variable d/t 14,755 "refused," "don't know," "missing,
+```
+
+
+## Highest grade/level of education completed by participants 20 years and older
+```{r}
+hist(nhanes$DMDEDUC2)
+
+# add "edu_adult_participants" to "nhanes" 
+nhanes$edu_adult_participants = factor(ifelse(nhanes$DMDEDUC2 ==1, "less than 9th grade",
+                                       ifelse(nhanes$DMDEDUC2 ==2, "9-11th grade",
+                                       ifelse(nhanes$DMDEDUC2 ==3, "high school grad/GED", 
+                                       ifelse(nhanes$DMDEDUC2 ==4, "some college or AA",
+                                       ifelse(nhanes$DMDEDUC2 ==5, "college grad or above", NA))))))
+summary(nhanes$edu_adult_participants)
+
+```
+
 
 ## Age in years at screening
 Based on the summary statistics of the variable "RIDAGEYR": the youngest participant is 3 years old, the oldest participant is 85 years old, and the median age is 31 years old. 
@@ -159,9 +205,217 @@ summary(nhanes$age)
 
 ## Gender
 ```{r}
-RIAGENDR
+hist(nhanes$RIAGENDR)
+
+# add "gender" to "nhanes"
+nhanes$gender = factor(ifelse(nhanes$RIAGENDR ==1, "male",
+                       ifelse(nhanes$RIAGENDR ==2, "female", NA)),
+                levels=c("male", "female"))
+summary(nhanes$gender)
+
 ```
 
+## Race/ethnicity
+```{r}
+hist(nhanes$RIDRETH1)
+
+# add "race/ethnicity" to "nhanes"
+nhanes$ethnicity = factor(ifelse(nhanes$RIDRETH1 ==1, "Mexican American",
+                       ifelse(nhanes$RIDRETH1 ==2, "Other Hispanic",
+                       ifelse(nhanes$RIDRETH1 ==3, "Non-Hispanic White", 
+                       ifelse(nhanes$RIDRETH1 ==4, "Non-Hispanic Black",
+                       ifelse(nhanes$RIDRETH1 ==5, "Other or Multi", NA))))),
+                levels=c("Non-Hispanic White", "Non-Hispanic Black", "Mexican American", "Other Hispanic", "Other or Multi"))
+summary(nhanes$ethnicity)
+
+```
+
+## Citizenship Status
+```{r}
+hist(nhanes$DMDCITZN)
+
+# add "citizenship status" to "nhanes"
+nhanes$citizenship = factor(ifelse(nhanes$DMDCITZN ==1, "birth or naturalization",
+                       ifelse(nhanes$DMDCITZN ==2, "not U,S, citizen", NA)),
+                levels=c("birth or naturalization", "not U,S, citizen"))
+summary(nhanes$citizenship)
+```
+
+## Length of time in the U.S.
+```{r}
+hist(nhanes$DMDYRSUS)
+
+# add length of time in the U.S. to "nhanes"
+nhanes$years_in_US = factor(ifelse(nhanes$DMDYRSUS ==1, "less than 1 year",
+                            ifelse(nhanes$DMDYRSUS ==2, "1 year or more, but less than 5 years",
+                            ifelse(nhanes$DMDYRSUS ==3, "5 years or more, but less than 10 years",
+                            ifelse(nhanes$DMDYRSUS ==4, "10 years or more, but less than 15 years",
+                            ifelse(nhanes$DMDYRSUS ==5, "15 years or more, but less than 20 years",
+                            ifelse(nhanes$DMDYRSUS ==6, "20 years or more, but less than 30 years",
+                            ifelse(nhanes$DMDYRSUS ==7, "30 years or more, but less than 40 years",
+                            ifelse(nhanes$DMDYRSUS ==8, "40 years or more, but less than 50 years",
+                            ifelse(nhanes$DMDYRSUS ==9, "50 years or more", NA))))))))))
+summary(nhanes$years_in_US)
+
+## not a very good variable, d/t 18,035 "refused," "don't know", or "missing" 
+```
+
+## Ratio of Family Income to Poverty Level
+```{r}
+hist(nhanes$INDFMPIR)
+
+# add ratio of family income to poverty level
+nhanes$income_to_poverty_ratio = factor(ifelse(nhanes$INDFMPIR < 1,"at poverty threshold",
+                                        ifelse(nhanes$INDFMPIR >=1 & nhanes$INDFMPIR <2, "family income 2x poverty threshold",
+                                        ifelse(nhanes$INDFMPIR >=2 & nhanes$INDFMPIR <3, "family income 3x poverty threshold",
+                                        ifelse(nhanes$INDFMPIR >=3 & nhanes$INDFMPIR <4, "family income 4x poverty threshold",
+                                        ifelse(nhanes$INDFMPIR >=4 & nhanes$INDFMPIR <5, "family income 5x poverty threshold",
+                                        ifelse(nhanes$INDFMPIR ==5, "family income more than 5x poverty threshold", NA)))))),
+                                 levels=c("at poverty threshold", "family income 2x poverty threshold", "family income 3x poverty threshold", "family income 4x poverty threshold", "family income 5x poverty threshold", "family income more than 5x poverty threshold"))
+
+summary(nhanes$income_to_poverty_ratio)
+```
+
+## Boxplots
+```{r}
+# Household reference person education level and Mono-ethyl phthalate
+box_edu_ref <- ggplot(data = nhanes, aes(x=log_monoethyl, y=edu_ref, fill=edu_ref)) + 
+  scale_fill_brewer(palette="PuBuGn") +
+  geom_boxplot() +
+  theme(text = element_text(size=12)) +
+  xlab("(logged) Mono-Ethyl Phthalate Level (ng/mL)") +
+  ylab("Household Reference Person's Education Level") +
+ggtitle("Household Ref. Person's Education Level and Logged Phthalate Level")
+
+box_edu_ref
+
+# Family Income and Mono-ethyl phthalate
+box_poverty <- ggplot(data = nhanes, aes(x=log_monoethyl, y=income_to_poverty_ratio, fill=income_to_poverty_ratio)) + 
+  scale_fill_brewer(palette="PuBuGn") +
+  geom_boxplot() +
+  theme(text = element_text(size=12)) +
+  xlab("(logged) Mono-Ethyl Phthalate Level (ng/mL)") +
+  ylab("Ratio of Participant's Family Income to Poverty") +
+  ggtitle("Poverty and Logged Phthalate Level")
+
+box_poverty
+
+# Age and Mono-ethyl phthalate
+box_age <- ggplot(data = nhanes, aes(x=log_monoethyl, y=age, fill=age)) + 
+  scale_fill_brewer(palette="PuBuGn") +
+  geom_boxplot() +
+  theme(text = element_text(size=12)) +
+  xlab("(logged) Mono-Ethyl Phthalate Level (ng/mL)") +
+  ylab("Age of Participant") +
+  ggtitle("Age and Logged Phthalate Level")
+
+box_age
+```
+
+
+## Suite of Models
+```{r}
+# multivariate regression analysis of socio-demographic variables and phthalates
+modela <- lm(log_monoethyl ~ edu_ref + age + gender + ethnicity + income_to_poverty_ratio +
+                  citizenship, data = nhanes)
+summary(modela)
+
+
+```
+
+
+## Forest Models
+```{r}
+data(nhanes) # Telling R we want to use this data
+
+modela <- lm(log_monoethyl ~ edu_ref + age + gender + ethnicity + income_to_poverty_ratio +
+                  citizenship, data = nhanes)
+summ(modela)
+
+summ(modela, robust = "HC1") #robust standard errors 
+
+summ(modela, confint = TRUE, digits = 3) #In many cases, you’ll learn more by looking at confidence intervals than p-values. You can request them from summ. default is 95% CIs
+
+summ(modela, confint = TRUE, pvals = FALSE) #DROP the p values all together
+
+# THE GRAPH 
+plot_summs(modela)
+plot_summs(modela, robust = TRUE)
+plot_summs(modela, inner_ci_level = .9)
+
+# plot coefficient uncertainty as normal distributions
+plot_summs(modela, plot.distributions = TRUE, inner_ci_level = .9)
+
+# table output for Word and RMarkdown documents
+## error is in the parenthesis
+export_summs(modela, scale = TRUE)
+
+# confidence intervals instead of standard errors
+export_summs(modela, scale = TRUE,
+             error_format = "[{conf.low}, {conf.high}]")
+
+```
+# renaming variables in the forest plot
+```{r}
+forest1 <- plot_summs(
+        point.size = 3,
+        fontsize=8,
+        colors = "darkseagreen4",
+        modela, coefs = c("Household Education College and Beyond
+                                 Partial College and Below (ref)" = "edu_refcollege and beyond", 
+                          
+                                 "Age: Young Adult
+                                 Child (ref)" = "ageyoung adult",
+                          
+                                 "Age: Middle-aged
+                                 Age:Child (ref)" = "agemiddle-aged",
+                          
+                                 "Age: Older Adult
+                                 Age: Child (ref)" = "ageolder adult",
+                          
+                                 "Gender: Female
+                                 Gender: Male (ref)" = "genderfemale",
+                          
+                                 "Ethnicity: Non-Hispanic Black
+                                 Non-Hispanic White (ref)" = "ethnicityNon-Hispanic Black",
+                          
+                                 "Ethnicity: Mexican American
+                                 Non-Hispanic White (ref)" = "ethnicityMexican American",
+                          
+                                 "Ethnicity: Other Hispanic
+                                 Non-Hispanic White (ref)" = "ethnicityOther Hispanic",
+                          
+                                 "Ethnicity: Other or Multi
+                                 Non-Hispanic White (ref)" = "ethnicityOther or Multi",
+                          
+                                 "Family Income to Poverty Ration: 2x Poverty threshold
+                                 At poverty threshold (ref)" = "income_to_poverty_ratiofamily income 2x poverty threshold",
+                          
+                                 "Family Income to Poverty Ration: 3x Poverty threshold
+                                 At poverty threshold (ref)" = "income_to_poverty_ratiofamily income 3x poverty threshold",
+                          
+                                 "Family Income to Poverty Ration: 4x Poverty threshold
+                                 At poverty threshold (ref)" = "income_to_poverty_ratiofamily income 4x poverty threshold",
+                          
+                                 "Family Income to Poverty Ration: 5x Poverty threshold
+                                 At poverty threshold (ref)" = "income_to_poverty_ratiofamily income 5x poverty threshold",
+                          
+                                 "Family Income to Poverty Ration: more than 5x Poverty threshold
+                                 At poverty threshold (ref)" = "income_to_poverty_ratiofamily income more than 5x poverty threshold",
+                          
+                                 "Citizenship Status: Not U.S. Citizen
+                                 U.S. Citizen by birth or naturalization (ref)" = "citizenshipnot U,S, citizen"),
+        
+                          scale = TRUE, robust = TRUE)
+
+forest1
+```
+
+
+## visualize missing data
+```{r}
+vis_miss(nhanes, sort_miss = TRUE)
+```
 
 
 
@@ -171,3 +425,5 @@ RIAGENDR
 
 ## References:
 - add a reference for why I am choosing college completion and above and partial college and below
+
+
