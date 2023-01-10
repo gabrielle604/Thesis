@@ -388,19 +388,19 @@ forest1 <- plot_summs(
                                  "Ethnicity: Other or Multi
                                  Non-Hispanic White (ref)" = "ethnicityOther or Multi",
                           
-                                 "Family Income to Poverty Ration: 2x Poverty threshold
+                                 "Family Income to Poverty Ratio: 2x Poverty threshold
                                  At poverty threshold (ref)" = "income_to_poverty_ratiofamily income 2x poverty threshold",
                           
-                                 "Family Income to Poverty Ration: 3x Poverty threshold
+                                 "Family Income to Poverty Ratio: 3x Poverty threshold
                                  At poverty threshold (ref)" = "income_to_poverty_ratiofamily income 3x poverty threshold",
                           
-                                 "Family Income to Poverty Ration: 4x Poverty threshold
+                                 "Family Income to Poverty Ratio: 4x Poverty threshold
                                  At poverty threshold (ref)" = "income_to_poverty_ratiofamily income 4x poverty threshold",
                           
-                                 "Family Income to Poverty Ration: 5x Poverty threshold
+                                 "Family Income to Poverty Ratio: 5x Poverty threshold
                                  At poverty threshold (ref)" = "income_to_poverty_ratiofamily income 5x poverty threshold",
                           
-                                 "Family Income to Poverty Ration: more than 5x Poverty threshold
+                                 "Family Income to Poverty Ratio: more than 5x Poverty threshold
                                  At poverty threshold (ref)" = "income_to_poverty_ratiofamily income more than 5x poverty threshold",
                           
                                  "Citizenship Status: Not U.S. Citizen
