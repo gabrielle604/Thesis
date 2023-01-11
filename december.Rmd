@@ -338,7 +338,7 @@ summ(modela, confint = TRUE, digits = 3) #In many cases, you’ll learn more by 
 
 summ(modela, confint = TRUE, pvals = FALSE) #DROP the p values all together
 
-# THE GRAPH 
+# THE GRAPH
 plot_summs(modela)
 plot_summs(modela, robust = TRUE)
 plot_summs(modela, inner_ci_level = .9)
@@ -425,5 +425,6 @@ vis_miss(nhanes, sort_miss = TRUE)
 
 ## References:
 - add a reference for why I am choosing college completion and above and partial college and below
+- use resources from GEOG 227
 
 
