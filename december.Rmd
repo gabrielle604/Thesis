@@ -320,11 +320,46 @@ modela <- lm(log_monoethyl ~ edu_ref + age + gender + ethnicity + income_to_pove
                   citizenship, data = nhanes)
 summary(modela)
 
+# take out gender
+modelb <- lm(log_monoethyl ~ edu_ref + age + ethnicity + income_to_poverty_ratio +
+                  citizenship, data = nhanes)
+summary(modelb)
+
+# take out gender, citizenship
+modelc <- lm(log_monoethyl ~ edu_ref + age + ethnicity + income_to_poverty_ratio, data = nhanes)
+summary(modelc)
+
 
 ```
 
 
+## Bayesian Information Criterion (BIC)
+The model that performs best is Model B, a simple linear regression showing the logged mono-ethyl phthalate as a function of the reference person's education level, the participant's age, the participant's ethnicity, the participant's family income to poverty ratio, and the participant's citizenship status.
+
+The delta BIC for Model C is 72.136, which is far beyond the BIC <7 threshold, so it is a very unlikely model, and therefore, we will dismiss Model C. This reinforces the idea that citizenship status matters substantially to the question of determining the logged phthalate level in individuals.
+
+Model A and Model B are quite similar - the only difference is that Model B does not include gender. Model A, which is the model performing second best, has a delta BIC = 6.590 (and still under the BIC < 7 threshold). 
+
+From Model B, we can determine --- EQUATION?
+
+
+
+```{r, results = TRUE}
+BIC_list <- c(BIC(modela), BIC(modelb), BIC(modelc))
+
+model_output <- rbind(data.frame(glance(modela)), data.frame(glance(modelb)), data.frame(glance(modelc))) %>% select(BIC)
+
+model_output <- mutate(model_output, delta.BIC = BIC-min(BIC_list))
+model_output$model <- c("Model A", "Model B", "Model C")
+model_output <- model_output[,c("model", "BIC", "delta.BIC")]
+
+kable(model_output, format = "markdown", digits = 3, caption = "BIC, and Delta.BIC for the models. Delta BIC > 7 indicates models that should be dismissed from further consideration.")
+```
+
+
 ## Forest Models
+
+### Forest model for Model A:
 ```{r}
 data(nhanes) # Telling R we want to use this data
 
@@ -355,7 +390,7 @@ export_summs(modela, scale = TRUE,
              error_format = "[{conf.low}, {conf.high}]")
 
 ```
-# renaming variables in the forest plot
+#### renaming variables in the forest plot
 ```{r}
 forest1 <- plot_summs(
         point.size = 3,
@@ -412,7 +447,92 @@ forest1
 ```
 
 
-## visualize missing data
+### Forest model for Model B:
+```{r}
+data(nhanes) # Telling R we want to use this data
+
+modelb <- lm(log_monoethyl ~ edu_ref + age + ethnicity + income_to_poverty_ratio +
+                  citizenship, data = nhanes)
+summ(modelb)
+
+summ(modelb, robust = "HC1") #robust standard errors 
+
+summ(modelb, confint = TRUE, digits = 3) #In many cases, you’ll learn more by looking at confidence intervals than p-values. You can request them from summ. default is 95% CIs
+
+summ(modelb, confint = TRUE, pvals = FALSE) #DROP the p values all together
+
+# THE GRAPH
+plot_summs(modelb)
+plot_summs(modelb, robust = TRUE)
+plot_summs(modelb, inner_ci_level = .9)
+
+# plot coefficient uncertainty as normal distributions
+plot_summs(modelb, plot.distributions = TRUE, inner_ci_level = .9)
+
+# table output for Word and RMarkdown documents
+## error is in the parenthesis
+export_summs(modelb, scale = TRUE)
+
+# confidence intervals instead of standard errors
+export_summs(modelb, scale = TRUE,
+             error_format = "[{conf.low}, {conf.high}]")
+
+```
+#### renaming variables in the forest plot 2
+```{r}
+forest2 <- plot_summs(
+        point.size = 3,
+        fontsize=8,
+        colors = "darkseagreen3",
+        modelb, coefs = c("Household Education College and Beyond
+                                 Partial College and Below (ref)" = "edu_refcollege and beyond", 
+                          
+                                 "Age: Young Adult
+                                 Child (ref)" = "ageyoung adult",
+                          
+                                 "Age: Middle-aged
+                                 Age:Child (ref)" = "agemiddle-aged",
+                          
+                                 "Age: Older Adult
+                                 Age: Child (ref)" = "ageolder adult",
+                          
+                                 "Ethnicity: Non-Hispanic Black
+                                 Non-Hispanic White (ref)" = "ethnicityNon-Hispanic Black",
+                          
+                                 "Ethnicity: Mexican American
+                                 Non-Hispanic White (ref)" = "ethnicityMexican American",
+                          
+                                 "Ethnicity: Other Hispanic
+                                 Non-Hispanic White (ref)" = "ethnicityOther Hispanic",
+                          
+                                 "Ethnicity: Other or Multi
+                                 Non-Hispanic White (ref)" = "ethnicityOther or Multi",
+                          
+                                 "Family Income to Poverty Ratio: 2x Poverty threshold
+                                 At poverty threshold (ref)" = "income_to_poverty_ratiofamily income 2x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 3x Poverty threshold
+                                 At poverty threshold (ref)" = "income_to_poverty_ratiofamily income 3x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 4x Poverty threshold
+                                 At poverty threshold (ref)" = "income_to_poverty_ratiofamily income 4x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 5x Poverty threshold
+                                 At poverty threshold (ref)" = "income_to_poverty_ratiofamily income 5x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: more than 5x Poverty threshold
+                                 At poverty threshold (ref)" = "income_to_poverty_ratiofamily income more than 5x poverty threshold",
+                          
+                                 "Citizenship Status: Not U.S. Citizen
+                                 U.S. Citizen by birth or naturalization (ref)" = "citizenshipnot U,S, citizen"),
+        
+                          scale = TRUE, robust = TRUE)
+
+forest2
+```
+
+
+## Visualize Missing Data
 ```{r}
 vis_miss(nhanes, sort_miss = TRUE)
 ```
@@ -424,7 +544,7 @@ vis_miss(nhanes, sort_miss = TRUE)
 
 
 ## References:
-- add a reference for why I am choosing college completion and above and partial college and below
+- add a reference to demonstrate rationale for categorizing each variable the way that I do (ex - college completion and above and partial college and below)
 - use resources from GEOG 227
 
 
