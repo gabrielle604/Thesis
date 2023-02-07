@@ -45,6 +45,8 @@ nhanesAnalysis <- nhanesDemo %>%
 nhanesAnalysis <- nhanesAnalysis %>% 
   mutate(gender = recode(gender, '1' = 0L,
                          '2' = 1L))
+## 1 >> 0, = male
+## 2 >> 1, = female
 
 # Convert "gender" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
 

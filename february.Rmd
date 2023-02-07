@@ -1,0 +1,233 @@
+---
+title: "Adding Weights to NHANES"
+author: "Gabrielle"
+date: '2023-02-07'
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,message=FALSE,warning = FALSE,results=FALSE)
+library(tidyverse)
+library(here)
+library(ggpubr) # for some graphic applications that extend ggplot2
+library(janitor)
+library(broom) # used to make tables
+library(knitr) # used to make table
+library(car) # has leveneTest 
+library(foreign) # to read in NHANES data
+library(rstanarm) # for the model fitting
+library(jtools) # Load jtools, for forest plots
+library(sandwich) # needed for robust standard errors in forest plot
+library(huxtable) # needed to be able to export table of forest plot values
+library(broom.mixed) # used in making tables
+library(visdat)
+library(ggplot2)
+
+library(haven) # for reading SAS XPT file from NHANES website
+library(survey) # for using survey weights
+library(dplyr) # for data wrangling
+
+```
+
+## LOAD THE DATASET 
+
+Years 2001-2016
+- demographics file
+- phthalates, urine file
+
+Downloaded from CDC National Health and Examination Survey, [NHANES Questionnaires, Datasets, and Related Documentation](https://wwwn.cdc.gov/nchs/nhanes/Default.aspx)
+
+
+```{r}
+# 2001-2002
+demographics01 <- read.xport(here("data","DEMO_B_2001_2002.XPT"))
+phthalates01 <- read.xport(here("data","PHPYPA_B_2001_2002.XPT"))
+nhanes01 <- merge(phthalates01,demographics01,all.x=T)
+
+# 2003-2004
+demographics03 <- read.xport(here("data","DEMO_C_2003_2004.XPT"))
+phthalates03 <- read.xport(here("data","L24PH_C_2003_2004.XPT"))
+nhanes03 <- merge(phthalates03,demographics03,all.x=T)
+
+# 2005-2006
+demographics05 <- read.xport(here("data","DEMO_D_2005_2006.XPT"))
+phthalates05 <- read.xport(here("data","PHTHTE_D_2005_2006.XPT"))
+nhanes05 <- merge(phthalates05,demographics05,all.x=T)
+
+# 2007-2008
+demographics07 <- read.xport(here("data","DEMO_E_2007_2008.XPT"))
+phthalates07 <- read.xport(here("data","PHTHTE_E_2007_2008.XPT"))
+nhanes07 <- merge(phthalates07,demographics07,all.x=T)
+
+# 2009-2010
+demographics09 <- read.xport(here("data","DEMO_F_2009_2010.XPT"))
+phthalates09 <- read.xport(here("data","PHTHTE_F_2009_2010.XPT"))
+nhanes09 <- merge(phthalates09,demographics09,all.x=T)
+
+# 2011-2012
+demographics11 <- read.xport(here("data","DEMO_G_2011_2012.XPT"))
+phthalates11 <- read.xport(here("data","PHTHTE_G_2011_2012.XPT"))
+nhanes11 <- merge(phthalates11,demographics11,all.x=T)
+
+# 2013-2014
+demographics13 <- read.xport(here("data","DEMO_H_2013_2014.XPT"))
+phthalates13 <- read.xport(here("data","PHTHTE_H_2013_2014.XPT"))
+nhanes13 <- merge(phthalates13,demographics13,all.x=T)
+
+# 2015-2016
+demographics15 <- read.xport(here("data","DEMO_I_2015_2016.XPT"))
+phthalates15 <- read.xport(here("data","PHTHTE_I_2015_2016.XPT"))
+nhanes15 <- merge(phthalates15,demographics15,all.x=T)
+```
+
+## Add a column with the year to each data file:
+
+```{r}
+nhanes01$year <- 2001
+nhanes03$year <- 2003
+nhanes05$year <- 2005
+nhanes07$year <- 2007
+nhanes09$year <- 2009
+nhanes11$year <- 2011
+nhanes13$year <- 2013
+nhanes15$year <- 2015
+```
+
+## Choose the variables to select from each data file
+
+Key step to ensure proper weighting =
+- persWeight = person-level weight ("WTINT2YR")
+- psu = primary sampling unit ("SDMVPSU")
+- strata = strata-level sampling unit ("SDMVSTRA")
+
+```{r}
+var<-c('year','WTINT2YR','SDMVPSU','SDMVSTRA','DMDEDUC3','DMDEDUC2','DMDHREDU','DMDHSEDU','RIDAGEYR','RIAGENDR','RIDRETH1','INDFMPIR','DMDYRSUS','DMDCITZN','URXMEP')
+nhanes01s<-subset(nhanes01,select=var)
+nhanes03s<-subset(nhanes03,select=var)
+nhanes05s<-subset(nhanes05,select=var)
+nhanes07s<-subset(nhanes07,select=var)
+nhanes09s<-subset(nhanes09,select=var)
+nhanes11s<-subset(nhanes11,select=var)
+nhanes13s<-subset(nhanes13,select=var)
+nhanes15s<-subset(nhanes15,select=var)
+```
+
+## Create one dataset for NHANES demographics and phthalates, year 2001-2016
+```{r}
+fullNHANES <- rbind(nhanes01s,nhanes03s,nhanes05s,nhanes07s,nhanes09s,nhanes11s,nhanes13s,nhanes15s)
+```
+
+## Save a data file. This one has what the "december22" one has, but also includes the person-level weight, primary sampling unit, and strata-level sampling unit
+```{r}
+## create a data file so that I don't need to load, clean, and select the data again
+# has all demographics and URXMEP phthalate for NHANES year 2001-2016
+write.csv(fullNHANES, "fullNHANESfeb07.csv")
+```
+
+## Copy and rename variables so they are more intuitive. 
+
+fpl = INDFMPIR (ratio of family income to poverty,ranges from 0 to 5 (i.e., 0% - 500%))
+age = RIDAGEYR (age in years at screening)
+gender = RIAGENDR
+persWeight = WTINT2YR (person-level weight)
+psu = SDMVPSU (primary sampling unit)
+strata = SDMVSTRA (strata-level sampling unit)
+refED = DMDHREDU (the household reference person's education level)
+refEDspouse = DMDHSEDU (the household reference person's spouse's education level)
+childED = DMDEDUC3 (the highest grade level of education completed by participants 6-19 y.o.)
+adultED = DMDEDUC2 (the highest grade/level of education completed by participants 20 years and older)
+ethnicity = RIDRETH1 (race/Hispanic origin)
+citizenship = DMDCITZN (citizenship status)
+yearsUS = DMDYRSUS (length of time in U.S.)
+monoEthyl = URXMEP (mono-ethyl phthalate, ng/mL)
+year = year the observation took place (*this was added by me when I merged the years of data)
+
+```{r}
+fullNHANES$fpl <- fullNHANES$INDFMPIR
+fullNHANES$age <- fullNHANES$RIDAGEYR
+fullNHANES$gender <- fullNHANES$RIAGENDR
+fullNHANES$persWeight <- fullNHANES$WTINT2YR
+fullNHANES$psu <- fullNHANES$SDMVPSU
+fullNHANES$strata <- fullNHANES$SDMVSTRA
+fullNHANES$refED <- fullNHANES$DMDHREDU
+fullNHANES$refEDspouse <- fullNHANES$DMDHSEDU
+fullNHANES$childED <- fullNHANES$DMDEDUC3
+fullNHANES$adultED <- fullNHANES$DMDEDUC2
+fullNHANES$ethnicity <- fullNHANES$RIDRETH1
+fullNHANES$citizenship <- fullNHANES$DMDCITZN
+fullNHANES$yearsUS <- fullNHANES$DMDYRSUS
+fullNHANES$monoEthyl <- fullNHANES$URXMEP
+```
+
+```{r}
+## create another data file that includes all the renaming and selected 30 variables
+write.csv(fullNHANES, "fullNHANES_renamed.csv")
+```
+
+
+## Complete an analysis:
+Since there are 28 variables, we will select only the variables we will use in this analysis
+
+```{r}
+nhanesAnalysisA <- fullNHANES %>% 
+  select(fpl, age, gender, persWeight, psu, strata)
+
+# Recode gender
+nhanesAnalysisA <- nhanesAnalysisA %>% 
+  mutate(gender = dplyr::recode(gender, '1' = 0L,
+                         '2' = 1L))
+
+# Convert "gender" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
+
+nhanesAnalysisA$gender <- as.factor(nhanesAnalysisA$gender)
+
+```
+
+## Survey Weights
+
+```{r}
+# Use "svydesign" to assign the weights. Use this new design variable "nhanesDesign" when running analyses
+
+nhanesDesignA <- svydesign(id = ~psu,
+                          strata = ~strata,
+                          weights = ~persWeight,
+                          nest = TRUE,
+                          data = nhanesAnalysisA)
+
+# Here we use "subset" to tell "nhanesDesignA" that we want to only look at a specific sub-population (i.e., those age between 18-79 y.o.)
+# This is important to do. If you don't do this and just restrict it in a different way, your estimates WON'T HAVE CORRECT SEs
+
+ageDesignA <- subset(nhanesDesignA, age > 17 & 
+                                  age <80)
+```
+
+## Statistics
+
+- Use "svymean" to calculate the population mean for age. The na.rm argument "TRUE" excludes missing values from the calculation
+- Notice that the mean age is 44.131 and the standard error is 0.2438
+
+- Since gender is a factor variable, "svymean" will treat it as such and give us the proportion of women
+- We see that men are 48.825% and women are 51.175% of the population in this age of 18-79 y.o.
+
+- Run a general linear model (glm) with a gaussian link function. 
+- Tell "svyglm" that "nhanesAnalysisA" is the dataset to use and to apply the "svydesign" object "ageDesign"
+- Brief results: age is positively correlated with FPL and that women are predicted to have lower FPL than men
+
+```{r}
+svymean(~age, ageDesignA, na.rm = TRUE)
+
+
+svymean(~gender, ageDesignA, na.rm = TRUE)
+
+
+outputA <- svyglm(fpl ~ age + gender,
+                 family = gaussian(),
+                 data = nhanesAnalysisA,
+                 design = ageDesignA)
+
+summary(outputA)
+
+```
+

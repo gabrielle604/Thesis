@@ -1,0 +1,95 @@
+---
+title: "Models"
+author: "Gabrielle"
+date: '2023-02-07'
+output: 
+  html_document:
+    code_folding: hide
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,message=FALSE,warning = FALSE,results=FALSE)
+library(tidyverse)
+library(here)
+library(ggpubr) # for some graphic applications that extend ggplot2
+library(janitor)
+library(broom) # used to make tables
+library(knitr) # used to make table
+library(car) # has leveneTest 
+library(foreign) # to read in NHANES data
+library(rstanarm) # for the model fitting
+library(jtools) # Load jtools, for forest plots
+library(sandwich) # needed for robust standard errors in forest plot
+library(huxtable) # needed to be able to export table of forest plot values
+library(broom.mixed) # used in making tables
+library(visdat)
+library(ggplot2)
+
+library(haven) # for reading SAS XPT file from NHANES website
+library(survey) # for using survey weights
+library(dplyr) # for data wrangling
+library(forcats)
+
+```
+
+
+## Load in the data
+```{r}
+fullNHANES <- read_csv(here("cleaned_data","fullNHANES_renamed.csv"))
+```
+
+## Analysis B
+
+```{r}
+# select the variables we want to use in this analysis B
+nhanesAnalysisB <- fullNHANES %>% 
+  select(fpl, age, gender, persWeight, psu, strata, refED, refEDspouse, childED, adultED, ethnicity, citizenship, yearsUS, monoEthyl)
+
+# Recode gender
+nhanesAnalysisB <- nhanesAnalysisB %>% 
+  mutate(gender = dplyr::recode(gender, '1' = 0L,
+                         '2' = 1L))
+
+# Convert "gender" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
+
+nhanesAnalysisB$gender <- as.factor(nhanesAnalysisB$gender)
+
+## Survey Weights
+nhanesDesignB <- svydesign(id = ~psu,
+                          strata = ~strata,
+                          weights = ~persWeight,
+                          nest = TRUE,
+                          data = nhanesAnalysisB)
+
+# Here we use "subset" to tell "nhanesDesignB" that we want to only look at a specific sub-population (i.e., those age less than 18 y.o.)
+# This is important to do. If you don't do this and just restrict it in a different way, your estimates WON'T HAVE CORRECT SEs
+
+ageDesignB <- subset(nhanesDesignB, age <18)
+
+
+svymean(~age, ageDesignB, na.rm = TRUE)
+# mean age is 10.906 y.o. and the SE is 0.0739
+
+svymean(~gender, ageDesignB, na.rm = TRUE)
+# boys: 50.259 %
+# girls: 49.741 %
+
+outputB <- svyglm(fpl ~ age + gender,
+                 family = gaussian(),
+                 data = nhanesAnalysisB,
+                 design = ageDesignB)
+
+summary(outputB)
+# age is positively correlated with FPL and gender is not significantly correlated with FPL
+
+outputC <- svyglm(monoEthyl ~ age + gender,
+                 family = gaussian(),
+                 data = nhanesAnalysisB,
+                 design = ageDesignB)
+
+summary(outputC)
+# age is positively correlated with monoEthyl phthalate
+# male gender is positively correlated with monoEthyl phthalate
+
+```
