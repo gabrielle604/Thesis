@@ -123,7 +123,8 @@ fullNHANES <- rbind(nhanes01s,nhanes03s,nhanes05s,nhanes07s,nhanes09s,nhanes11s,
 ```{r}
 ## create a data file so that I don't need to load, clean, and select the data again
 # has all demographics and URXMEP phthalate for NHANES year 2001-2016
-write.csv(fullNHANES, "fullNHANESfeb07.csv")
+
+# write.csv(fullNHANES, "fullNHANESfeb07.csv")
 ```
 
 ## Copy and rename variables so they are more intuitive. 
@@ -163,12 +164,27 @@ fullNHANES$monoEthyl <- fullNHANES$URXMEP
 
 ```{r}
 ## create another data file that includes all the renaming and selected 30 variables
+
 write.csv(fullNHANES, "fullNHANES_renamed.csv")
 ```
 
 
+## Visualize Missing Data
+```{r}
+vis_miss(fullNHANES, sort_miss = TRUE)
+```
+- there are 22,349 observations
+- 29 variables
+- we do NOT to use these variables because lots of data is MISSING
+    - "yearsUS" >> 80% 
+    - "childED" >> 66%
+    - "refEDspouse" >> 48%
+    - "adultED" >> 37%
+- all the other variables have 8% or less missing
+
+
 ## Complete an analysis:
-Since there are 28 variables, we will select only the variables we will use in this analysis
+Since there are 29 variables, we will select only the variables we will use in this analysis
 
 ```{r}
 nhanesAnalysisA <- fullNHANES %>% 

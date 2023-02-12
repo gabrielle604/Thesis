@@ -93,3 +93,5 @@ summary(outputC)
 # male gender is positively correlated with monoEthyl phthalate
 
 ```
+
+- I think I should basically just go through and do a variety of different analyses that are for various age ranges, and include various attributes/demographics
