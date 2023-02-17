@@ -1,0 +1,502 @@
+---
+title: "newModels"
+output: html_document
+date: "2023-02-16"
+output: 
+  html_document:
+    code_folding: hide
+---
+## working with this website: https://stats.oarc.ucla.edu/r/seminars/survey-data-analysis-with-r/
+absolute gold. 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(here)
+library(ggpubr) # for some graphic applications that extend ggplot2
+library(janitor)
+library(broom) # used to make tables
+library(knitr) # used to make table
+library(car) # has leveneTest 
+library(foreign) # to read in NHANES data
+library(rstanarm) # for the model fitting
+library(jtools) # Load jtools, for forest plots
+library(sandwich) # needed for robust standard errors in forest plot
+library(huxtable) # needed to be able to export table of forest plot values
+library(broom.mixed) # used in making tables
+library(visdat)
+library(ggplot2)
+
+library(haven) # for reading SAS XPT file from NHANES website
+library(survey) # for using survey weights
+library(dplyr) # for data wrangling
+library(forcats)
+
+#install.packages("remotes")
+#remotes::install_github("carlganz/svrepmisc")
+
+library("remotes")
+library("svrepmisc")
+
+```
+
+
+## Load the data
+```{r}
+fullNHANES <- read_csv(here("cleaned_data","fullNHANES_renamed.csv"))
+```
+
+```{r}
+fullNHANES_recat <- read_csv(here("cleaned_data","fullNHANES_recat.csv"))
+```
+
+
+## The svydesign function
+
+Before we can start our analyses, we need to use the svydesign function from the “survey” package written by Thomas Lumley. The svydesign function tells R about the design elements in the survey. Once this command has been issued, all you need to do for your analyses is use the object that contains this information in each command. Because the 2011-2012 NHANES data were released with a sampling weight (wtint2yr), a PSU variable (sdmvpsu) and a strata variable (sdmvstra), we will use these our svydesign function. The svydesign function looks like this:
+
+```{r}
+nhc <- svydesign(id=~SDMVPSU, weights=~WTINT2YR,strata=~SDMVSTRA, nest=TRUE, survey.lonely.psu = "adjust", data=fullNHANES_recat)
+nhc
+```
+
+Stratified 1 - level Cluster Sampling design (with replacement)
+With (31) clusters.
+
+```{r}
+svydesign(id = ~SDMVPSU, weights = ~WTINT2YR, strata = ~SDMVSTRA, 
+nest = TRUE, survey.lonely.psu = "adjust", data = fullNHANES_recat)
+```
+
+## We can get additional information about the sample, such as the number of PSUs per strata, by using the summary function.
+
+```{r}
+summary(nhc)
+```
+
+## Descriptive statistics with continuous variables
+
+```{r}
+svymean(~RIDAGEYR, nhc)
+
+```
+
+## We can also get the standard deviation of the age variable. We use the function svysd, which is found in the jtools package.
+
+### When there are missing data for a variable, the na = TRUE argument is needed.
+
+```{r}
+svysd(~RIDAGEYR,design = nhc, na = TRUE)
+
+svymean(~URXMEP, nhc, na = TRUE)
+
+svymean(~INDFMPIR, nhc, na = TRUE)
+
+```
+
+## The means of more than one variable can be obtained by placing “+” between the variables. Notice that a listwise deletion has been done, so that the means in output below are different from the means shown above.
+
+```{r}
+svymean(~RIDAGEYR+URXMEP+INDFMPIR, nhc, na = TRUE)
+```
+## In the examples below, the mean, standard deviation, and variance are obtained.
+
+```{r}
+svymean(~URXMEP, nhc, na = TRUE)
+svysd(~URXMEP,design = nhc, na = TRUE)
+svyvar(~URXMEP, design = nhc, na = TRUE)
+
+```
+## The cv function is used to get the coefficient of variation. The coefficient of variation is the ratio of the standard error to the mean, multiplied by 100%. It is an indication of the variability relative to the mean in the population and is not affected by the unit of measurement of the variable.
+
+```{r}
+cv(svymean(~URXMEP,design = nhc, na = TRUE))
+
+```
+
+# Quantiles are a useful descriptive statistic for continuous variables, particularly variables that are not normally distributed.
+
+```{r}
+svyquantile(~URXMEP, design = nhc, na = TRUE, c(.25,.5,.75),ci=TRUE)
+
+```
+
+## Descriptive statistics for categorical variables
+
+
+
+```{r}
+svytable(~fpl, design = nhc)
+
+```
+
+We can also use the table function to get crosstabulations. We will start with two-way crosstabs.
+
+```{r}
+svytable(~fpl + citizenship, nhc)
+
+```
+
+In the next example, we use a different syntax to do the same thing. Notice that the output is displayed differently, although the information in the output is the same.
+```{r}
+svytable(~interaction(fpl, citizenship), design = nhc)
+
+```
+
+Although not a descriptive statistic, let’s see how to get a chi-squared test while we are talking about tables. Of course, only a two-way table can be specified.
+
+```{r}
+svychisq(~fpl+citizenship, nhc, statistic="adjWald")
+
+```
+
+## Graphing of continuous variables
+Let’s start with a histogram. By default, the density is shown on the y-axis.
+
+```{r}
+svyhist(~log(monoEthyl), nhc)
+```
+
+Instead of the density on the y-axis, we can request the count.  Notice the large count of respondents in the last column on the right.  The coding of the ridageyr variable explains this.
+
+
+```{r}
+svyhist(~RIDAGEYR, nhc, probability = FALSE)
+
+```
+
+We can also create boxplots.
+
+
+```{r}
+svyboxplot(~log(monoEthyl)~1, nhc, all.outliers=TRUE)
+
+```
+
+We can break the boxplot by a grouping variable. The grouping variable must be a factor.
+
+```{r}
+svyboxplot(~log(monoEthyl)~factor(gender), nhc, all.outliers=TRUE)
+
+```
+
+We can make barcharts. In the example below, we also preview some syntax used for subpopulation analysis.
+
+```{r}
+barplt<-svyby(~log(monoEthyl)+RIDAGEYR, ~gender, nhc, na = TRUE, svymean)
+barplot(barplt,beside=TRUE,legend=TRUE)
+```
+
+
+
+```{r}
+dotchart(barplt)
+
+```
+
+We can make a scatterplot with the sampling weights corresponding to the bubble size.
+
+```{r}
+svyplot(~log(monoEthyl)+RIDAGEYR, nhc, style="bubble")
+
+```
+
+There are a variety of density and smoothed plots that can be made. Some examples are below.
+
+```{r}
+smth<-svysmooth(~log(monoEthyl), design=nhc)
+plot(smth)
+```
+
+```{r}
+dens<-svysmooth(~log(monoEthyl), design=nhc,bandwidth=30)
+plot(dens)
+```
+
+```{r}
+dens1<-svysmooth(~log(monoEthyl), design=nhc)
+plot(dens1)
+```
+
+## Subpopulation Analysis
+
+Complex survey data are different. With survey data, you (almost) never get to delete any cases from the data set, even if you will never use them in any of your analyses. 
+Instead, the survey package has two options that allow you to correctly analyze subpopulations of your survey data. 
+
+These options are 'svyby' and 'subset.survey.design'. 
+
+The subset.survey.design option is sort of like deleting unwanted cases (without really deleting them, of course), and the svyby option is very similar to by-group processing in that the results are shown for each group of the by-variable.
+
+### Why deleting cases from a survey data set can be so problematic:
+
+There are two formulas that can used to calculate the standard errors. 
+One formula is used when you do by-group processing or delete unwanted cases from the dataset, and survey statisticians call this the conditional approach. This is used when members of the subpopulation cannot appear in certain strata and therefore those strata should not be used in the calculation of the standard error. In practice, this rarely happens in public-use complex survey datasets. One reason is because the analyst usually does not know which combination of variables defines a particular stratum.
+
+The other formula is used when you use the svyby option, and survey statisticians call this the unconditional approach. 
+This is used when members of the subpopulation can be in any of the strata, even if there are some strata in the sample data that do not contain any members of the subpopulation. 
+
+Because members of the subpopulation, all of the strata need to be used in the calculation of the standard error, and hence all of the data must be in the dataset. 
+
+If the data set is subset (meaning that observations not to be included in the subpopulation are deleted from the data set), the standard errors of the estimates cannot be calculated correctly. When the svyby option is used, only the cases defined by the subpopulation are used in the calculation of the estimate, but all cases are used in the calculation of the standard errors. 
+
+[For more information on this issue, please see Sampling Techniques, Third Edition by William G. Cochran (1977) and Small Area Estimation by J. N. K. Rao (2003). A nice description of this issue given in Brady West’s 2009 Stata Conference (in Washington, D.C.).]
+
+Both svyby and subset.svy.design use the formula for the unconditional standard errors.
+
+
+
+Let’s start by calculating the mean of age.
+
+```{r}
+svymean(~RIDAGEYR, nhc)
+```
+
+Now let’s calculate the mean of age for males and females. In this example, the variable female is the subpopulation variable.
+
+```{r}
+svyby(~RIDAGEYR, ~gender, nhc, svymean)
+
+```
+
+You can use more than one categorical variable to define the subpopulation. To do so, put + between the variables.
+
+
+```{r}
+svyby(~RIDAGEYR, ~refED+gender, nhc, svymean)
+
+```
+
+In the next example, three variables are used.
+
+```{r}
+svyby(~log(monoEthyl), ~refED+citizenship+gender, nhc, na = TRUE, svymean)
+
+```
+
+Sometimes you don’t want so much output. Rather, you just want the output for a specific group. You can get this by creating a subpopulation of the data with the subset function. In the example below, we obtain the output only for males.
+
+```{r}
+smale <- subset(nhc,gender == "male")
+summary(smale)
+```
+```{r}
+svymean(~RIDAGEYR,design=smale)
+
+```
+
+## Models
+
+A wide variety of statistical models can be run with complex survey data. 
+
+With only a few exceptions, the results of these analyses can be interpreted just as the results from the same analyses with experimental or quasi-experimental data. 
+
+For example, if you run an OLS regression with weighted data, assuming that the sampling plan has been correctly specified, the regression coefficients are interpreted exactly as any other OLS regression coefficient. 
+
+The same is true for the various logistic regression models, including binary logistic regression, ordinal logistic regression and multinomial logistic regression (of which there is not an example in this workshop). 
+
+Most of the assumptions of these models are also the same. However, some assumptions, such as the assumption regarding the normality of the residuals in OLS regression, are often not meaningful because of the large sample size commonly seen with complex survey data.
+
+### t tests
+
+```{r}
+svyttest(log(monoEthyl)~0, nhc, na = TRUE)
+
+```
+In the example of the paired-samples t-test below, the “I” is used to tell R to leave the part in parentheses “as is”, meaning do the subtraction between the two variables. Hence, the formula means that the difference between
+
+```{r}
+# svyttest(I(log(monoEthyl)-XXXX)~0, nhc, na = TRUE)
+# if I had another phthalate in my dataset, I would put it where the XXXX is
+```
+
+Now let’s run an independent-samples t-test.
+
+```{r}
+svyttest(log(monoEthyl)~refED, nhc)
+
+```
+
+As you probably know, an independent-samples t-test tests the null hypothesis that the difference in the means of the two groups is 0. Another way to think about this type of t-test is to think of it as a linear regression with a single binary predictor. The intercept will be the mean of the reference group, and the coefficient will be the difference between the two groups.
+
+We will start by running the t-test function as before, and then replicate the results using the svyglm function, which can be used to run a linear regression. The svyby function is used with the covmat argument to save the elements to a matrix so that we can use the svycontrast function to subtract the values. 
+
+The purpose of this example is not to belabor the point about a t-test, but rather to show how to get a matrix of values and then compare those values with the svycontrast function in a simple example where the answer is already known.
+
+```{r}
+svyttest(RIDAGEYR~gender, nhc)
+
+```
+```{r}
+summary(svyglm(RIDAGEYR~gender, design=nhc))
+
+```
+```{r}
+a <- svyby(~RIDAGEYR, ~gender, nhc, na.rm.by = TRUE, svymean, covmat = TRUE)
+vcov(a)
+```
+
+```{r}
+svycontrast(a, c( -1, 1))
+
+```
+
+This example is similar to the previous example, except that here the svypredmeans function is used.
+
+```{r}
+summary(svyglm(log(monoEthyl)~gender, design=nhc))
+
+```
+Note that the variable gender cannot be in model if you want to get the predicted means for that variable.
+
+```{r}
+ttest1 <- (svyglm(RIDAGEYR~1, design=nhc))
+summary(ttest1)
+```
+
+The variable gender is used here to get the predicted means for each level of gender
+
+
+```{r}
+# svypredmeans(ttest1, ~gender)
+# ^ doesn't work
+
+tt<-svyttest(log(monoEthyl)~gender, nhc)
+tt
+
+```
+
+We can get the confidence interval around the difference. In this example, we get the 90% confidence interval.
+
+```{r}
+confint(tt, level=0.9)
+```
+
+## Multiple linear regression
+
+We need to use the summary function to get the standard errors, test statistics and p-values. 
+Let’s start with a model that has no interaction terms.  
+The outcome variable will be monoEthyl, and the predictors will be gender and refED
+
+```{r}
+summary(svyglm(log(monoEthyl)~gender+refED, design=nhc, na.action = na.omit))
+
+```
+
+Now let’s add an interaction between the two predictor variables.
+
+```{r}
+summary(svyglm(log(monoEthyl)~gender*refED, design=nhc, na.action = na.omit))
+
+```
+
+```{r}
+glm1 <- (svyglm(log(monoEthyl)~gender*refED, design=nhc, na.action = na.omit))
+glm1
+```
+This example is just like the previous one, only here factor notation is used. 
+This is important when the categorical predictor has more than two levels.
+
+```{r}
+summary(svyglm(log(monoEthyl)~factor(gender)*factor(ethnicity), design=nhc, na.action = na.omit))
+```
+
+```{r}
+ols1 <- (svyglm(log(monoEthyl)~1, design=nhc, na.action = na.omit))
+predmarg<-svypredmeans(ols1, ~interaction(gender,ethnicity))
+predmarg
+```
+## Non-parametric tests
+
+Non-parametric tests can also be done. Let’s start with a Wilcoxon signed rank test, which is the non-parametric analog of an independent-samples t-test.
+
+```{r}
+wil <- svyranktest(log(monoEthyl)~gender, design = nhc, na = TRUE, test = c("wilcoxon"))
+wil
+```
+
+This is an example of a median test.
+
+```{r}
+mtest <- svyranktest(log(monoEthyl)~gender, design = nhc, na = TRUE, test=("median"))
+mtest
+
+```
+
+This is an example of a Kruskal Wallis test, which is the non-parametric analog of a one-way ANOVA.
+
+```{r}
+kwtest <- svyranktest(log(monoEthyl)~refED, design = nhc, na = TRUE, test=("KruskalWallis"))
+kwtest
+
+```
+## Logistic regression
+Let’s see a few examples of logistic regression.
+"as.factor" is key to getting this code running
+
+```{r}
+logit1 <- (svyglm(as.factor(DMDCITZN)~as.factor(DMDHREDU)+RIDAGEYR, family=quasibinomial, design=nhc, na.action = na.omit))
+summary(logit1)
+```
+
+In the next example, we will run the logistic regression on a subpopulation (respondents over age 20).
+
+```{r}
+subset1 <- subset(nhc, RIDAGEYR > 19)
+logit2 <- (svyglm(as.factor(DMDCITZN)~as.factor(DMDHREDU)+RIDAGEYR, family=quasibinomial, design=subset1, na.action = na.omit))
+summary(logit2)
+```
+
+We can also get a Wald test for a variable in the model.
+
+```{r}
+regTermTest(logit2, ~RIDAGEYR)
+
+```
+
+Instead of getting an R-squared value as you do in linear regression, a pseudo-R-squared is given in logistic regression. 
+There are many different versions of pseudo-R-squared, and two of them are available with the psrsq function.
+
+```{r}
+psrsq(logit2, method = c("Cox-Snell"))
+
+psrsq(logit2, method = c("Nagelkerke"))
+
+```
+
+## Ordered logistic regression
+
+Below is an example of an ordered logistic regression. Note that the outcome variable must be a factor.
+
+```{r}
+ologit1 <- svyolr(as.factor(ethnicity)~as.factor(gender)+as.factor(citizenship)+RIDAGEYR, design = nhc, method = c("logistic"))
+summary(ologit1)
+```
+
+## Poisson regression
+
+Poisson regression can be run. This is a type of count model (meaning that the outcome variable should be a count).
+
+```{r}
+# summary(svyglm(monoEthyl~gender, design=nhc, family=poisson()))
+# it runs, but shows MANY warnings
+```
+
+## Other types of analyses available in the survey package
+
+There are many more types of analyses that are available in the survey package and in other packages that work with complex survey data. Below are a few examples.
+
+The example below shows a principle components analysis (PCA).
+
+```{r}
+pc <- svyprcomp(~monoEthyl+gender+refED, design=nhc,scale=TRUE,scores=TRUE)
+pc
+```
+
+This is an example of Cronbach’s alpha.
+
+```{r}
+svycralpha(~log(monoEthyl)+RIDAGEYR, design=nhc, na.rm = TRUE)
+
+```
+

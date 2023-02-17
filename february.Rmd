@@ -162,10 +162,138 @@ fullNHANES$yearsUS <- fullNHANES$DMDYRSUS
 fullNHANES$monoEthyl <- fullNHANES$URXMEP
 ```
 
-```{r}
-## create another data file that includes all the renaming and selected 30 variables
+## Create another data file that includes all the renaming and selected 30 variables
 
+```{r}
 write.csv(fullNHANES, "fullNHANES_renamed.csv")
+```
+
+## Re-categorize the variables:
+
+#### Household reference person's education level
+```{r}
+fullNHANES$refED = factor(ifelse(fullNHANES$DMDHREDU %in% 1:4,"partial college and below",
+                         ifelse(fullNHANES$DMDHREDU==5,"college and beyond",NA)),
+                  levels=c("partial college and below","college and beyond"))
+
+summary(fullNHANES$refED)
+# 784 NAs
+
+```
+
+#### Household reference person's spouse's education level
+```{r}
+fullNHANES$refEDspouse = factor(ifelse(fullNHANES$DMDHSEDU %in% 1:4,"partial college and below",
+                         ifelse(fullNHANES$DMDHSEDU==5,"college and beyond",NA)),
+                  levels=c("partial college and below","college and beyond"))
+summary(fullNHANES$refEDspouse)
+# 10,778 NAs
+
+```
+
+## Highest grade level of education completed by participants 6-19 y.o.
+```{r}
+fullNHANES$childED = factor(ifelse(fullNHANES$DMDEDUC3 %in% 0:8,"primary",
+                         ifelse(fullNHANES$DMDEDUC3 %in% 9:15,"secondary",NA)),
+                  levels=c("primary","secondary"))
+summary(fullNHANES$childED)
+# 14,755 NAs
+
+```
+
+
+## Highest grade/level of education completed by participants 20 years and older
+```{r}
+fullNHANES$adultED = factor(ifelse(fullNHANES$DMDEDUC2 ==1, "less than 9th grade",
+                                       ifelse(fullNHANES$DMDEDUC2 ==2, "9-11th grade",
+                                       ifelse(fullNHANES$DMDEDUC2 ==3, "high school grad/GED", 
+                                       ifelse(fullNHANES$DMDEDUC2 ==4, "some college or AA",
+                                       ifelse(fullNHANES$DMDEDUC2 ==5, "college grad or above", NA))))))
+summary(fullNHANES$adultED)
+# 8,273 NAs
+
+```
+
+
+## Age in years at screening
+Based on the summary statistics of the variable "RIDAGEYR": the youngest participant is 3 years old, the oldest participant is 85 years old, and the median age is 31 years old. 
+
+```{r}
+fullNHANES$age = factor(ifelse(fullNHANES$RIDAGEYR >=65,"older adult",
+                    ifelse(fullNHANES$RIDAGEYR >25 & fullNHANES$RIDAGEYR<64,"middle-aged",
+                    ifelse(fullNHANES$RIDAGEYR >=19 & fullNHANES$RIDAGEYR<=25,"young adult",
+                    ifelse(fullNHANES$RIDAGEYR <=18,"child",NA)))),
+             levels=c("child","young adult", "middle-aged", "older adult"))
+summary(fullNHANES$age)
+# 220 NAs
+
+```
+
+## Gender
+```{r}
+fullNHANES$gender = factor(ifelse(fullNHANES$RIAGENDR ==1, "male",
+                       ifelse(fullNHANES$RIAGENDR ==2, "female", NA)),
+                levels=c("male", "female"))
+summary(fullNHANES$gender)
+
+```
+
+## Race/ethnicity
+```{r}
+fullNHANES$ethnicity = factor(ifelse(fullNHANES$RIDRETH1 ==1, "Mexican American",
+                       ifelse(fullNHANES$RIDRETH1 ==2, "Other Hispanic",
+                       ifelse(fullNHANES$RIDRETH1 ==3, "Non-Hispanic White", 
+                       ifelse(fullNHANES$RIDRETH1 ==4, "Non-Hispanic Black",
+                       ifelse(fullNHANES$RIDRETH1 ==5, "Other or Multi", NA))))),
+                levels=c("Non-Hispanic White", "Non-Hispanic Black", "Mexican American", "Other Hispanic", "Other or Multi"))
+summary(fullNHANES$ethnicity)
+
+```
+
+## Citizenship Status
+```{r}
+fullNHANES$citizenship = factor(ifelse(fullNHANES$DMDCITZN ==1, "birth or naturalization",
+                       ifelse(fullNHANES$DMDCITZN ==2, "not U,S, citizen", NA)),
+                levels=c("birth or naturalization", "not U,S, citizen"))
+summary(fullNHANES$citizenship)
+# 42 NAs
+
+```
+
+## Length of time in the U.S.
+```{r}
+fullNHANES$yearsUS = factor(ifelse(fullNHANES$DMDYRSUS ==1, "less than 1 year",
+                            ifelse(fullNHANES$DMDYRSUS ==2, "1 year or more, but less than 5 years",
+                            ifelse(fullNHANES$DMDYRSUS ==3, "5 years or more, but less than 10 years",
+                            ifelse(fullNHANES$DMDYRSUS ==4, "10 years or more, but less than 15 years",
+                            ifelse(fullNHANES$DMDYRSUS ==5, "15 years or more, but less than 20 years",
+                            ifelse(fullNHANES$DMDYRSUS ==6, "20 years or more, but less than 30 years",
+                            ifelse(fullNHANES$DMDYRSUS ==7, "30 years or more, but less than 40 years",
+                            ifelse(fullNHANES$DMDYRSUS ==8, "40 years or more, but less than 50 years",
+                            ifelse(fullNHANES$DMDYRSUS ==9, "50 years or more", NA))))))))))
+summary(fullNHANES$yearsUS)
+# 18,035 NAs
+ 
+```
+
+## Ratio of Family Income to Poverty Level
+```{r}
+fullNHANES$fpl = factor(ifelse(fullNHANES$INDFMPIR < 1,"at poverty threshold",
+                                        ifelse(fullNHANES$INDFMPIR >=1 & fullNHANES$INDFMPIR <2, "family income 2x poverty threshold",
+                                        ifelse(fullNHANES$INDFMPIR >=2 & fullNHANES$INDFMPIR <3, "family income 3x poverty threshold",
+                                        ifelse(fullNHANES$INDFMPIR >=3 & fullNHANES$INDFMPIR <4, "family income 4x poverty threshold",
+                                        ifelse(fullNHANES$INDFMPIR >=4 & fullNHANES$INDFMPIR <5, "family income 5x poverty threshold",
+                                        ifelse(fullNHANES$INDFMPIR ==5, "family income more than 5x poverty threshold", NA)))))),
+                                 levels=c("at poverty threshold", "family income 2x poverty threshold", "family income 3x poverty threshold", "family income 4x poverty threshold", "family income 5x poverty threshold", "family income more than 5x poverty threshold"))
+
+summary(fullNHANES$fpl)
+# 1,750 NAs
+```
+
+## Save a dataset with renamed, recategorized variables
+
+```{r}
+write.csv(fullNHANES, "fullNHANES_recat.csv")
 ```
 
 
@@ -174,7 +302,7 @@ write.csv(fullNHANES, "fullNHANES_renamed.csv")
 vis_miss(fullNHANES, sort_miss = TRUE)
 ```
 - there are 22,349 observations
-- 29 variables
+- 30 variables
 - we do NOT to use these variables because lots of data is MISSING
     - "yearsUS" >> 80% 
     - "childED" >> 66%
@@ -183,8 +311,9 @@ vis_miss(fullNHANES, sort_miss = TRUE)
 - all the other variables have 8% or less missing
 
 
+### this actually won't work with the re-categorized data -- have to use the original variables
 ## Complete an analysis:
-Since there are 29 variables, we will select only the variables we will use in this analysis
+Since there are 30 variables, we will select only the variables we will use in this analysis
 
 ```{r}
 nhanesAnalysisA <- fullNHANES %>% 

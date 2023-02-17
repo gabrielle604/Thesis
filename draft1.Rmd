@@ -1,0 +1,223 @@
+---
+title: "draft1"
+output: html_document
+date: "2023-02-16"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,message=FALSE,warning = FALSE,results=FALSE)
+library(tidyverse)
+library(here)
+library(ggpubr) # for some graphic applications that extend ggplot2
+library(janitor)
+library(broom) # used to make tables
+library(knitr) # used to make table
+library(car) # has leveneTest 
+library(foreign) # to read in NHANES data
+library(rstanarm) # for the model fitting
+library(jtools) # Load jtools, for forest plots
+library(sandwich) # needed for robust standard errors in forest plot
+library(huxtable) # needed to be able to export table of forest plot values
+library(broom.mixed) # used in making tables
+library(visdat)
+library(ggplot2)
+
+library(haven) # for reading SAS XPT file from NHANES website
+library(survey) # for using survey weights
+library(dplyr) # for data wrangling
+
+```
+
+## Load in the already cleaned and renamed data
+
+#### Renamed variables
+* fpl = INDFMPIR (ratio of family income to poverty,ranges from 0 to 5 (i.e., 0% - 500%))
+* age = RIDAGEYR (age in years at screening)
+* gender = RIAGENDR
+* persWeight = WTINT2YR (person-level weight)
+* psu = SDMVPSU (primary sampling unit)
+* strata = SDMVSTRA (strata-level sampling unit)
+* refED = DMDHREDU (the household reference person's education level)
+* refEDspouse = DMDHSEDU (the household reference person's spouse's education level)
+* childED = DMDEDUC3 (the highest grade level of education completed by participants 6-19 y.o.)
+* adultED = DMDEDUC2 (the highest grade/level of education completed by participants 20 years and older)
+* ethnicity = RIDRETH1 (race/Hispanic origin)
+* citizenship = DMDCITZN (citizenship status)
+* yearsUS = DMDYRSUS (length of time in U.S.)
+* monoEthyl = URXMEP (mono-ethyl phthalate, ng/mL)
+* year = year the observation took place (*this was added by me when I merged the years of data)
+
+```{r}
+fullNHANES <- read_csv(here("cleaned_data","fullNHANES_recat.csv")) 
+```
+
+
+## Visualize Missing Data
+```{r}
+vis_miss(fullNHANES, sort_miss = TRUE)
+```
+- there are 22,349 observations
+- 30 variables (why is there the extra 31st variable that is the far left 1, 2, 3...)
+- we do NOT want to use these variables because lots of data is MISSING
+    - "yearsUS" >> 80% 
+    - "childED" >> 66%
+    - "refEDspouse" >> 48%
+    - "adultED" >> 37%
+- all the other variables have 8% or less missing
+
+
+
+## Complete an analysis:
+Select the variables we will use in this analysis
+
+```{r}
+nhanesAnalysisA <- fullNHANES %>% 
+  select(INDFMPIR, RIDAGEYR, RIAGENDR, persWeight, psu, strata)
+
+# Recode gender
+nhanesAnalysisA <- nhanesAnalysisA %>% 
+  mutate(RIAGENDR = dplyr::recode(RIAGENDR, '1' = 0L,
+                         '2' = 1L))
+
+# Convert "gender" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
+
+nhanesAnalysisA$RIAGENDR <- as.factor(nhanesAnalysisA$RIAGENDR)
+
+```
+
+## Survey Weights
+
+```{r}
+# Use "svydesign" to assign the weights. Use this new design variable "nhanesDesign" when running analyses
+
+nhanesDesignA <- svydesign(id = ~psu,
+                          strata = ~strata,
+                          weights = ~persWeight,
+                          nest = TRUE,
+                          data = nhanesAnalysisA)
+
+# Here we use "subset" to tell "nhanesDesignA" that we want to only look at a specific sub-population (i.e., those age between 18-79 y.o.)
+# This is important to do. If you don't do this and just restrict it in a different way, your estimates WON'T HAVE CORRECT SEs
+
+ageDesignA <- subset(nhanesDesignA, RIDAGEYR > 17 & 
+                                  RIDAGEYR <80)
+```
+
+## Statistics
+
+- Use "svymean" to calculate the population mean for age. The na.rm argument "TRUE" excludes missing values from the calculation
+- Notice that the mean age is 44.131 and the standard error is 0.2438
+
+- Since gender is a factor variable, "svymean" will treat it as such and give us the proportion of women
+- We see that men are 48.825% and women are 51.175% of the population in this age of 18-79 y.o.
+
+- Run a general linear model (glm) with a gaussian link function. 
+- Tell "svyglm" that "nhanesAnalysisA" is the dataset to use and to apply the "svydesign" object "ageDesign"
+- Brief results: age is positively correlated with FPL and that women are predicted to have lower FPL than men
+
+```{r}
+svymean(~RIDAGEYR, ageDesignA, na.rm = TRUE)
+
+
+svymean(~RIAGENDR, ageDesignA, na.rm = TRUE)
+
+
+outputA <- svyglm(INDFMPIR ~ RIDAGEYR + RIAGENDR,
+                 family = gaussian(),
+                 data = nhanesAnalysisA,
+                 design = ageDesignA)
+
+summary(outputA)
+
+```
+
+```{r}
+# select the variables we want to use in this analysis 1
+nhanesAnalysis1 <- fullNHANES %>% 
+  select(fpl, age, gender, persWeight, psu, strata, refED, refEDspouse, childED, adultED, ethnicity, citizenship, yearsUS, monoEthyl)
+
+# Recode gender
+nhanesAnalysis1 <- nhanesAnalysis1 %>% 
+  mutate(gender = dplyr::recode(gender, '1' = 0L,
+                         '2' = 1L))
+
+# Convert "gender" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
+
+nhanesAnalysis1$gender <- as.factor(nhanesAnalysis1$gender)
+
+# Convert "age" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
+
+nhanesAnalysis1$age <- as.factor(nhanesAnalysis1$age)
+
+# Convert "fpl" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
+
+nhanesAnalysis1$fpl <- as.factor(nhanesAnalysis1$fpl)
+
+# Convert "refED" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
+
+nhanesAnalysis1$refED <- as.factor(nhanesAnalysis1$refED)
+
+# Convert "refEDspouse" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
+
+nhanesAnalysis1$refEDspouse <- as.factor(nhanesAnalysis1$refEDspouse)
+
+# Convert "childED" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
+
+nhanesAnalysis1$childED <- as.factor(nhanesAnalysis1$childED)
+
+# Convert "adultED" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
+
+nhanesAnalysis1$adultED <- as.factor(nhanesAnalysis1$adultED)
+
+# Convert "ethnicity" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
+
+nhanesAnalysis1$ethnicity <- as.factor(nhanesAnalysis1$ethnicity)
+
+# Convert "citizenship" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
+
+nhanesAnalysis1$citizenship <- as.factor(nhanesAnalysis1$citizenship)
+
+# Convert "yearsUS" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
+
+nhanesAnalysis1$yearsUS <- as.factor(nhanesAnalysis1$yearsUS)
+
+
+### look at LOG of monoethyl phthalate instead???
+
+
+
+
+
+
+## Survey Weights
+nhanesDesign1 <- svydesign(id = ~psu,
+                          strata = ~strata,
+                          weights = ~persWeight,
+                          nest = TRUE,
+                          data = nhanesAnalysis1)
+
+# Here we use "subset" to tell "nhanesDesignB" that we want to only look at a specific sub-population (i.e., those age less than 18 y.o.)
+# This is important to do. If you don't do this and just restrict it in a different way, your estimates WON'T HAVE CORRECT SEs
+
+ageDesign1 <- subset(nhanesDesign1, age > 17 & 
+                                  age <80)
+
+svymean(~age, ageDesign1, na.rm = TRUE)
+# mean age ///
+
+svymean(~gender, ageDesign1, na.rm = TRUE)
+# boys: //
+# girls: //
+
+output1 <- svyglm(fpl ~ age + gender,
+                 family = gaussian(),
+                 data = nhanesAnalysis1,
+                 design = ageDesign1)
+
+summary(output1)
+#
+```
+

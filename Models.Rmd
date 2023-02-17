@@ -39,7 +39,7 @@ library(forcats)
 fullNHANES <- read_csv(here("cleaned_data","fullNHANES_renamed.csv"))
 ```
 
-## Analysis B
+## Analysis B: <18 (children)
 
 ```{r}
 # select the variables we want to use in this analysis B
@@ -81,7 +81,8 @@ outputB <- svyglm(fpl ~ age + gender,
                  design = ageDesignB)
 
 summary(outputB)
-# age is positively correlated with FPL and gender is not significantly correlated with FPL
+# age is positively correlated with fpl
+# gender is not significantly correlated with fpl
 
 outputC <- svyglm(monoEthyl ~ age + gender,
                  family = gaussian(),
@@ -90,8 +91,294 @@ outputC <- svyglm(monoEthyl ~ age + gender,
 
 summary(outputC)
 # age is positively correlated with monoEthyl phthalate
-# male gender is positively correlated with monoEthyl phthalate
+# male gender (1) is positively correlated with monoEthyl phthalate
+
+outputD <- svyglm(monoEthyl ~ age + childED,
+                 family = gaussian(),
+                 data = nhanesAnalysisB,
+                 design = ageDesignB)
+
+summary(outputD)
+# age is positively correlated with monoEthyl phthalate
+# childED is not correlated with monoEthyl phthalate
+
+outputE <- svyglm(monoEthyl ~ age + refED,
+                 family = gaussian(),
+                 data = nhanesAnalysisB,
+                 design = ageDesignB)
+
+summary(outputE)
+# age is positively correlated with monoEthyl phthalate
+# refED is negatively correlated with monoEthyl phthalate
+
+outputF <- svyglm(monoEthyl ~ age + refEDspouse,
+                 family = gaussian(),
+                 data = nhanesAnalysisB,
+                 design = ageDesignB)
+
+summary(outputF)
+# age is positively correlated with monoEthyl phthalate
+# refEDspouse is negatively correlated with monoEthyl phthalate
+
+outputG <- svyglm(monoEthyl ~ age + ethnicity,
+                 family = gaussian(),
+                 data = nhanesAnalysisB,
+                 design = ageDesignB)
+
+summary(outputG)
+# age is positively correlated with monoEthyl phthalate
+# ethnicity is not correlated with monoEthyl phthalates
+
+outputH <- svyglm(monoEthyl ~ age + citizenship,
+                 family = gaussian(),
+                 data = nhanesAnalysisB,
+                 design = ageDesignB)
+
+summary(outputH)
+# age is positively correlated with monoEthyl phthalate
+# citizenship is not correlated with monoEthyl phthalates
+
+outputI <- svyglm(monoEthyl ~ age + yearsUS,
+                 family = gaussian(),
+                 data = nhanesAnalysisB,
+                 design = ageDesignB)
+
+summary(outputI)
+# age is positively correlated with monoEthyl phthalate
+# years in US is negatively correlated with monoEthyl phthalates
+
 
 ```
 
-- I think I should basically just go through and do a variety of different analyses that are for various age ranges, and include various attributes/demographics
+## Analysis C: 18-80 (adults)
+
+```{r}
+# select the variables we want to use in this analysis B
+nhanesAnalysisC <- fullNHANES %>% 
+  select(fpl, age, gender, persWeight, psu, strata, refED, refEDspouse, childED, adultED, ethnicity, citizenship, yearsUS, monoEthyl)
+
+# Recode gender
+nhanesAnalysisC <- nhanesAnalysisC %>% 
+  mutate(gender = dplyr::recode(gender, '1' = 0L,
+                         '2' = 1L))
+
+# Convert "gender" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
+
+nhanesAnalysisC$gender <- as.factor(nhanesAnalysisC$gender)
+
+## Survey Weights
+nhanesDesignC <- svydesign(id = ~psu,
+                          strata = ~strata,
+                          weights = ~persWeight,
+                          nest = TRUE,
+                          data = nhanesAnalysisC)
+
+# Here we use "subset" to tell "nhanesDesignB" that we want to only look at a specific sub-population (i.e., those age less than 18 y.o.)
+# This is important to do. If you don't do this and just restrict it in a different way, your estimates WON'T HAVE CORRECT SEs
+
+ageDesignC <- subset(nhanesDesignC, age > 17 & 
+                                  age <80)
+
+svymean(~age, ageDesignC, na.rm = TRUE)
+# mean age is 44.131 y.o. and the SE is 0.2438
+
+svymean(~gender, ageDesignC, na.rm = TRUE)
+# boys: 48.825 %
+# girls: 51.175 %
+
+outputB_adult <- svyglm(fpl ~ age + gender,
+                 family = gaussian(),
+                 data = nhanesAnalysisC,
+                 design = ageDesignC)
+
+summary(outputB_adult)
+# age is positively correlated with fpl
+# male gender is negatively correlated with fpl
+
+
+
+outputC_adult <- svyglm(monoEthyl ~ age + gender,
+                 family = gaussian(),
+                 data = nhanesAnalysisC,
+                 design = ageDesignC)
+
+summary(outputC_adult)
+# age and gender are not correlated with monoEthyl phthalate
+
+
+
+outputD_adult <- svyglm(monoEthyl ~ age + adultED,
+                 family = gaussian(),
+                 data = nhanesAnalysisC,
+                 design = ageDesignC)
+
+summary(outputD_adult)
+# age is not correlated with monoEthyl phthalate
+# adultED is negatively correlated with monoEthyl phthalate
+
+
+
+outputE_adult <- svyglm(monoEthyl ~ age + refED,
+                 family = gaussian(),
+                 data = nhanesAnalysisC,
+                 design = ageDesignC)
+
+summary(outputE_adult)
+# age is not correlated with monoEthyl phthalate
+# refED is negatively correlated with monoEthyl phthalate
+
+
+
+outputF_adult <- svyglm(monoEthyl ~ age + refEDspouse,
+                 family = gaussian(),
+                 data = nhanesAnalysisC,
+                 design = ageDesignC)
+
+summary(outputF_adult)
+# age is not correlated with monoEthyl phthalate
+# refEDspouse is negatively correlated with monoEthyl phthalate
+
+
+
+outputG_adult <- svyglm(monoEthyl ~ age + ethnicity,
+                 family = gaussian(),
+                 data = nhanesAnalysisC,
+                 design = ageDesignC)
+
+summary(outputG_adult)
+# age is not correlated with monoEthyl phthalate
+# ethnicity is not correlated with monoEthyl phthalates
+
+
+
+outputH_adult <- svyglm(monoEthyl ~ age + citizenship,
+                 family = gaussian(),
+                 data = nhanesAnalysisC,
+                 design = ageDesignC)
+
+summary(outputH_adult)
+# age is not correlated with monoEthyl phthalate
+# citizenship is positively correlated with monoEthyl phthalates
+
+
+
+outputI_adult <- svyglm(monoEthyl ~ age + yearsUS,
+                 family = gaussian(),
+                 data = nhanesAnalysisC,
+                 design = ageDesignC)
+
+summary(outputI_adult)
+# age is not correlated with monoEthyl phthalate
+# years in US is not correlated with monoEthyl phthalates
+
+
+```
+
+## Models: adults
+
+```{r}
+# select the variables we want to use in this analysis B
+nhanesAnalysisMod <- fullNHANES %>% 
+  select(fpl, age, gender, persWeight, psu, strata, refED, refEDspouse, childED, adultED, ethnicity, citizenship, yearsUS, monoEthyl)
+
+# Recode gender
+nhanesAnalysisMod <- nhanesAnalysisMod %>% 
+  mutate(gender = dplyr::recode(gender, '1' = 0L,
+                         '2' = 1L))
+
+# Convert "gender" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
+
+nhanesAnalysisMod$gender <- as.factor(nhanesAnalysisMod$gender)
+
+## Survey Weights
+nhanesDesignMod <- svydesign(id = ~psu,
+                          strata = ~strata,
+                          weights = ~persWeight,
+                          nest = TRUE,
+                          data = nhanesAnalysisMod)
+
+# Here we use "subset" to tell "nhanesDesignMod" that we want to only look at a specific sub-population (i.e., those age greater than 17 y.o. and less than 80 y.o.)
+# This is important to do. If you don't do this and just restrict it in a different way, your estimates WON'T HAVE CORRECT SEs
+
+ageDesignMod <- subset(nhanesDesignMod, age > 17 & 
+                                  age <80)
+
+svymean(~age, ageDesignMod, na.rm = TRUE)
+# mean age is 44.131 y.o. and the SE is 0.2438
+
+svymean(~gender, ageDesignMod, na.rm = TRUE)
+# boys: 48.825 %
+# girls: 51.175 %
+
+# 1
+outputMod1 <- svyglm(monoEthyl ~ refED + fpl + citizenship + yearsUS,
+                 family = gaussian(),
+                 data = nhanesAnalysisMod,
+                 design = ageDesignMod)
+
+summary(outputMod1)
+
+
+# 2
+outputMod2 <- svyglm(monoEthyl ~ age + gender,
+                 family = gaussian(),
+                 data = nhanesAnalysisMod,
+                 design = ageDesignMod)
+
+summary(outputMod2)
+
+
+# 3
+outputMod3 <- svyglm(monoEthyl ~ age + gender + fpl,
+                 family = gaussian(),
+                 data = nhanesAnalysisMod,
+                 design = ageDesignMod)
+
+summary(outputMod3)
+
+
+# 4
+outputMod4 <- svyglm(monoEthyl ~ age + gender + fpl + ethnicity,
+                 family = gaussian(),
+                 data = nhanesAnalysisMod,
+                 design = ageDesignMod)
+
+summary(outputMod4)
+
+# 5
+outputMod5 <- svyglm(monoEthyl ~ age + gender + fpl + ethnicity + citizenship,
+                 family = gaussian(),
+                 data = nhanesAnalysisMod,
+                 design = ageDesignMod)
+
+summary(outputMod5)
+
+# 6
+outputMod6 <- svyglm(monoEthyl ~ age + gender + fpl + ethnicity + citizenship + yearsUS,
+                 family = gaussian(),
+                 data = nhanesAnalysisMod,
+                 design = ageDesignMod)
+
+summary(outputMod6)
+
+# 7
+outputMod7 <- svyglm(monoEthyl ~ age + gender + fpl + ethnicity + citizenship + 
+                       yearsUS + refED, 
+                 family = gaussian(),
+                 data = nhanesAnalysisMod,
+                 design = ageDesignMod)
+
+summary(outputMod7)
+
+# 8
+outputMod8 <- svyglm(monoEthyl ~ age + gender + fpl + ethnicity + citizenship +
+                       yearsUS + refED + adultED, 
+                 family = gaussian(),
+                 data = nhanesAnalysisMod,
+                 design = ageDesignMod)
+
+summary(outputMod8)
+
+
+```
+

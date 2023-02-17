@@ -41,10 +41,10 @@ nhanesAnalysis <- nhanesDemo %>%
   select(fpl, age, gender, persWeight, psu, strata)
 
 # Recode gender
-
 nhanesAnalysis <- nhanesAnalysis %>% 
-  mutate(gender = recode(gender, '1' = 0L,
-                         '2' = 1L))
+  mutate(gender = dplyr::recode(gender, '1' = 0L,
+                                '2' = 1L))
+
 ## 1 >> 0, = male
 ## 2 >> 1, = female
 
@@ -84,7 +84,7 @@ svymean(~age, ageDesign, na.rm = TRUE)
 svymean(~gender, ageDesign, na.rm = TRUE)
 
 # Now we will run a general linear model (glm) with a gaussian link function. 
-# We tell svyglm that nhanesAnalysis is the dataset to use adn to apply the "svydesign" object "ageDesign"
+# We tell svyglm that nhanesAnalysis is the dataset to use and to apply the "svydesign" object "ageDesign"
 # I won't dive into the results here, but you can see that age is positively correlated with FPL and that 
 # women are predicted to have lower FPL than men
 
