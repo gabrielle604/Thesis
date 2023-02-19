@@ -220,7 +220,7 @@ Based on the summary statistics of the variable "RIDAGEYR": the youngest partici
 
 ```{r}
 fullNHANES$age = factor(ifelse(fullNHANES$RIDAGEYR >=65,"older adult",
-                    ifelse(fullNHANES$RIDAGEYR >25 & fullNHANES$RIDAGEYR<64,"middle-aged",
+                    ifelse(fullNHANES$RIDAGEYR >25 & fullNHANES$RIDAGEYR<=64,"middle-aged",
                     ifelse(fullNHANES$RIDAGEYR >=19 & fullNHANES$RIDAGEYR<=25,"young adult",
                     ifelse(fullNHANES$RIDAGEYR <=18,"child",NA)))),
              levels=c("child","young adult", "middle-aged", "older adult"))
@@ -309,70 +309,6 @@ vis_miss(fullNHANES, sort_miss = TRUE)
     - "refEDspouse" >> 48%
     - "adultED" >> 37%
 - all the other variables have 8% or less missing
+- would the "missing" number change if I looked at (for example) childED with only the subset of participants that are in fact children?
 
-
-### this actually won't work with the re-categorized data -- have to use the original variables
-## Complete an analysis:
-Since there are 30 variables, we will select only the variables we will use in this analysis
-
-```{r}
-nhanesAnalysisA <- fullNHANES %>% 
-  select(fpl, age, gender, persWeight, psu, strata)
-
-# Recode gender
-nhanesAnalysisA <- nhanesAnalysisA %>% 
-  mutate(gender = dplyr::recode(gender, '1' = 0L,
-                         '2' = 1L))
-
-# Convert "gender" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
-
-nhanesAnalysisA$gender <- as.factor(nhanesAnalysisA$gender)
-
-```
-
-## Survey Weights
-
-```{r}
-# Use "svydesign" to assign the weights. Use this new design variable "nhanesDesign" when running analyses
-
-nhanesDesignA <- svydesign(id = ~psu,
-                          strata = ~strata,
-                          weights = ~persWeight,
-                          nest = TRUE,
-                          data = nhanesAnalysisA)
-
-# Here we use "subset" to tell "nhanesDesignA" that we want to only look at a specific sub-population (i.e., those age between 18-79 y.o.)
-# This is important to do. If you don't do this and just restrict it in a different way, your estimates WON'T HAVE CORRECT SEs
-
-ageDesignA <- subset(nhanesDesignA, age > 17 & 
-                                  age <80)
-```
-
-## Statistics
-
-- Use "svymean" to calculate the population mean for age. The na.rm argument "TRUE" excludes missing values from the calculation
-- Notice that the mean age is 44.131 and the standard error is 0.2438
-
-- Since gender is a factor variable, "svymean" will treat it as such and give us the proportion of women
-- We see that men are 48.825% and women are 51.175% of the population in this age of 18-79 y.o.
-
-- Run a general linear model (glm) with a gaussian link function. 
-- Tell "svyglm" that "nhanesAnalysisA" is the dataset to use and to apply the "svydesign" object "ageDesign"
-- Brief results: age is positively correlated with FPL and that women are predicted to have lower FPL than men
-
-```{r}
-svymean(~age, ageDesignA, na.rm = TRUE)
-
-
-svymean(~gender, ageDesignA, na.rm = TRUE)
-
-
-outputA <- svyglm(fpl ~ age + gender,
-                 family = gaussian(),
-                 data = nhanesAnalysisA,
-                 design = ageDesignA)
-
-summary(outputA)
-
-```
 

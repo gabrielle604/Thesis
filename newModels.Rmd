@@ -124,14 +124,12 @@ svyquantile(~URXMEP, design = nhc, na = TRUE, c(.25,.5,.75),ci=TRUE)
 
 ## Descriptive statistics for categorical variables
 
-
-
 ```{r}
 svytable(~fpl, design = nhc)
 
 ```
 
-We can also use the table function to get crosstabulations. We will start with two-way crosstabs.
+We can also use the table function to get cross tabulations. We will start with two-way crosstabs.
 
 ```{r}
 svytable(~fpl + citizenship, nhc)
@@ -282,7 +280,6 @@ summary(smale)
 ```
 ```{r}
 svymean(~RIDAGEYR,design=smale)
-
 ```
 
 ## Models
@@ -301,7 +298,6 @@ Most of the assumptions of these models are also the same. However, some assumpt
 
 ```{r}
 svyttest(log(monoEthyl)~0, nhc, na = TRUE)
-
 ```
 In the example of the paired-samples t-test below, the “I” is used to tell R to leave the part in parentheses “as is”, meaning do the subtraction between the two variables. Hence, the formula means that the difference between
 
@@ -325,11 +321,9 @@ The purpose of this example is not to belabor the point about a t-test, but rath
 
 ```{r}
 svyttest(RIDAGEYR~gender, nhc)
-
 ```
 ```{r}
 summary(svyglm(RIDAGEYR~gender, design=nhc))
-
 ```
 ```{r}
 a <- svyby(~RIDAGEYR, ~gender, nhc, na.rm.by = TRUE, svymean, covmat = TRUE)
@@ -411,14 +405,14 @@ predmarg
 Non-parametric tests can also be done. Let’s start with a Wilcoxon signed rank test, which is the non-parametric analog of an independent-samples t-test.
 
 ```{r}
-wil <- svyranktest(log(monoEthyl)~gender, design = nhc, na = TRUE, test = c("wilcoxon"))
+wil <- svyranktest(log(monoEthyl)~age, design = nhc, na = TRUE, test = c("wilcoxon"))
 wil
 ```
 
 This is an example of a median test.
 
 ```{r}
-mtest <- svyranktest(log(monoEthyl)~gender, design = nhc, na = TRUE, test=("median"))
+mtest <- svyranktest(log(monoEthyl)~age, design = nhc, na = TRUE, test=("median"))
 mtest
 
 ```
@@ -428,8 +422,8 @@ This is an example of a Kruskal Wallis test, which is the non-parametric analog 
 ```{r}
 kwtest <- svyranktest(log(monoEthyl)~refED, design = nhc, na = TRUE, test=("KruskalWallis"))
 kwtest
-
 ```
+
 ## Logistic regression
 Let’s see a few examples of logistic regression.
 "as.factor" is key to getting this code running
@@ -443,7 +437,7 @@ In the next example, we will run the logistic regression on a subpopulation (res
 
 ```{r}
 subset1 <- subset(nhc, RIDAGEYR > 19)
-logit2 <- (svyglm(as.factor(DMDCITZN)~as.factor(DMDHREDU)+RIDAGEYR, family=quasibinomial, design=subset1, na.action = na.omit))
+logit2 <- (svyglm(as.factor(log(monoEthyl))~as.factor(refED)+RIDAGEYR, family=quasibinomial, design=subset1, na.action = na.omit))
 summary(logit2)
 ```
 
@@ -451,7 +445,6 @@ We can also get a Wald test for a variable in the model.
 
 ```{r}
 regTermTest(logit2, ~RIDAGEYR)
-
 ```
 
 Instead of getting an R-squared value as you do in linear regression, a pseudo-R-squared is given in logistic regression. 
@@ -461,7 +454,6 @@ There are many different versions of pseudo-R-squared, and two of them are avail
 psrsq(logit2, method = c("Cox-Snell"))
 
 psrsq(logit2, method = c("Nagelkerke"))
-
 ```
 
 ## Ordered logistic regression
@@ -497,6 +489,5 @@ This is an example of Cronbach’s alpha.
 
 ```{r}
 svycralpha(~log(monoEthyl)+RIDAGEYR, design=nhc, na.rm = TRUE)
-
 ```
 

@@ -7,8 +7,10 @@ output:
     code_folding: hide
 ---
 
+
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE,message=FALSE,warning = FALSE,results=FALSE)
+knitr::opts_chunk$set(echo = TRUE)
+
 library(tidyverse)
 library(here)
 library(ggpubr) # for some graphic applications that extend ggplot2
@@ -28,196 +30,154 @@ library(ggplot2)
 library(haven) # for reading SAS XPT file from NHANES website
 library(survey) # for using survey weights
 library(dplyr) # for data wrangling
+library(forcats)
+
+#install.packages("remotes")
+#remotes::install_github("carlganz/svrepmisc")
+
+library("remotes")
+library("svrepmisc")
 
 ```
 
-## Load in the already cleaned and renamed data
+## Load the data
+```{r}
+fullNHANES_recat <- read_csv(here("cleaned_data","fullNHANES_recat.csv"))
+```
+## The svydesign function
 
-#### Renamed variables
-* fpl = INDFMPIR (ratio of family income to poverty,ranges from 0 to 5 (i.e., 0% - 500%))
-* age = RIDAGEYR (age in years at screening)
-* gender = RIAGENDR
-* persWeight = WTINT2YR (person-level weight)
-* psu = SDMVPSU (primary sampling unit)
-* strata = SDMVSTRA (strata-level sampling unit)
-* refED = DMDHREDU (the household reference person's education level)
-* refEDspouse = DMDHSEDU (the household reference person's spouse's education level)
-* childED = DMDEDUC3 (the highest grade level of education completed by participants 6-19 y.o.)
-* adultED = DMDEDUC2 (the highest grade/level of education completed by participants 20 years and older)
-* ethnicity = RIDRETH1 (race/Hispanic origin)
-* citizenship = DMDCITZN (citizenship status)
-* yearsUS = DMDYRSUS (length of time in U.S.)
-* monoEthyl = URXMEP (mono-ethyl phthalate, ng/mL)
-* year = year the observation took place (*this was added by me when I merged the years of data)
+Before we can start our analyses, we need to use the svydesign function from the “survey” package written by Thomas Lumley. The svydesign function tells R about the design elements in the survey. Once this command has been issued, all that needs to be done for the analyses is use the object that contains this information in each command. Because the 2001-2016 NHANES data were released with a sampling weight (wtint2yr), a PSU variable (sdmvpsu) and a strata variable (sdmvstra), we will use these our svydesign function. 
 
 ```{r}
-fullNHANES <- read_csv(here("cleaned_data","fullNHANES_recat.csv")) 
+nhc <- svydesign(id=~SDMVPSU, weights=~WTINT2YR,strata=~SDMVSTRA, nest=TRUE, survey.lonely.psu = "adjust", data=fullNHANES_recat)
+nhc
 ```
 
+## We can get additional information about the sample, such as the number of PSUs per strata, by using the summary function.
 
-## Visualize Missing Data
 ```{r}
-vis_miss(fullNHANES, sort_miss = TRUE)
+summary(nhc)
 ```
-- there are 22,349 observations
-- 30 variables (why is there the extra 31st variable that is the far left 1, 2, 3...)
-- we do NOT want to use these variables because lots of data is MISSING
-    - "yearsUS" >> 80% 
-    - "childED" >> 66%
-    - "refEDspouse" >> 48%
-    - "adultED" >> 37%
-- all the other variables have 8% or less missing
 
+## Descriptive statistics with continuous variables
 
+### We can also get the standard deviation of the age variable. We use the function svysd, which is found in the jtools package.
 
-## Complete an analysis:
-Select the variables we will use in this analysis
+- When there are missing data for a variable, the na = TRUE argument is needed.
+
+## The means of more than one variable can be obtained by placing “+” between the variables. Notice that a listwise deletion has been done, so that the means in output below are different from the means shown above.
 
 ```{r}
-nhanesAnalysisA <- fullNHANES %>% 
-  select(INDFMPIR, RIDAGEYR, RIAGENDR, persWeight, psu, strata)
+svymean(~RIDAGEYR, nhc)
 
-# Recode gender
-nhanesAnalysisA <- nhanesAnalysisA %>% 
-  mutate(RIAGENDR = dplyr::recode(RIAGENDR, '1' = 0L,
-                         '2' = 1L))
-
-# Convert "gender" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
-
-nhanesAnalysisA$RIAGENDR <- as.factor(nhanesAnalysisA$RIAGENDR)
+svymean(~RIDAGEYR + URXMEP + INDFMPIR + fpl,design = nhc, na = TRUE)
 
 ```
 
-## Survey Weights
+## In the examples below, the mean, standard deviation, and variance are obtained.
 
 ```{r}
-# Use "svydesign" to assign the weights. Use this new design variable "nhanesDesign" when running analyses
+svymean(~log(monoEthyl), nhc, na = TRUE)
+svysd(~log(monoEthyl),design = nhc, na = TRUE)
+svyvar(~log(monoEthyl), design = nhc, na = TRUE)
 
-nhanesDesignA <- svydesign(id = ~psu,
-                          strata = ~strata,
-                          weights = ~persWeight,
-                          nest = TRUE,
-                          data = nhanesAnalysisA)
-
-# Here we use "subset" to tell "nhanesDesignA" that we want to only look at a specific sub-population (i.e., those age between 18-79 y.o.)
-# This is important to do. If you don't do this and just restrict it in a different way, your estimates WON'T HAVE CORRECT SEs
-
-ageDesignA <- subset(nhanesDesignA, RIDAGEYR > 17 & 
-                                  RIDAGEYR <80)
 ```
 
-## Statistics
-
-- Use "svymean" to calculate the population mean for age. The na.rm argument "TRUE" excludes missing values from the calculation
-- Notice that the mean age is 44.131 and the standard error is 0.2438
-
-- Since gender is a factor variable, "svymean" will treat it as such and give us the proportion of women
-- We see that men are 48.825% and women are 51.175% of the population in this age of 18-79 y.o.
-
-- Run a general linear model (glm) with a gaussian link function. 
-- Tell "svyglm" that "nhanesAnalysisA" is the dataset to use and to apply the "svydesign" object "ageDesign"
-- Brief results: age is positively correlated with FPL and that women are predicted to have lower FPL than men
+## The cv function is used to get the coefficient of variation
+The coefficient of variation is the ratio of the standard error to the mean, multiplied by 100%. It is an indication of the variability relative to the mean in the population and is not affected by the unit of measurement of the variable.
 
 ```{r}
-svymean(~RIDAGEYR, ageDesignA, na.rm = TRUE)
+cv(svymean(~log(monoEthyl),design = nhc, na = TRUE))
 
+```
 
-svymean(~RIAGENDR, ageDesignA, na.rm = TRUE)
+## Quantiles are a useful descriptive statistic for continuous variables, particularly variables that are not normally distributed.
 
-
-outputA <- svyglm(INDFMPIR ~ RIDAGEYR + RIAGENDR,
-                 family = gaussian(),
-                 data = nhanesAnalysisA,
-                 design = ageDesignA)
-
-summary(outputA)
-
+```{r}
+svyquantile(~URXMEP, design = nhc, na = TRUE, c(.25,.5,.75),ci=TRUE)
 ```
 
 ```{r}
-# select the variables we want to use in this analysis 1
-nhanesAnalysis1 <- fullNHANES %>% 
-  select(fpl, age, gender, persWeight, psu, strata, refED, refEDspouse, childED, adultED, ethnicity, citizenship, yearsUS, monoEthyl)
-
-# Recode gender
-nhanesAnalysis1 <- nhanesAnalysis1 %>% 
-  mutate(gender = dplyr::recode(gender, '1' = 0L,
-                         '2' = 1L))
-
-# Convert "gender" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
-
-nhanesAnalysis1$gender <- as.factor(nhanesAnalysis1$gender)
-
-# Convert "age" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
-
-nhanesAnalysis1$age <- as.factor(nhanesAnalysis1$age)
-
-# Convert "fpl" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
-
-nhanesAnalysis1$fpl <- as.factor(nhanesAnalysis1$fpl)
-
-# Convert "refED" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
-
-nhanesAnalysis1$refED <- as.factor(nhanesAnalysis1$refED)
-
-# Convert "refEDspouse" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
-
-nhanesAnalysis1$refEDspouse <- as.factor(nhanesAnalysis1$refEDspouse)
-
-# Convert "childED" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
-
-nhanesAnalysis1$childED <- as.factor(nhanesAnalysis1$childED)
-
-# Convert "adultED" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
-
-nhanesAnalysis1$adultED <- as.factor(nhanesAnalysis1$adultED)
-
-# Convert "ethnicity" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
-
-nhanesAnalysis1$ethnicity <- as.factor(nhanesAnalysis1$ethnicity)
-
-# Convert "citizenship" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
-
-nhanesAnalysis1$citizenship <- as.factor(nhanesAnalysis1$citizenship)
-
-# Convert "yearsUS" to a factor variable. We need to do this so it isn't treated as a continuous variable in our analyses
-
-nhanesAnalysis1$yearsUS <- as.factor(nhanesAnalysis1$yearsUS)
-
-
-### look at LOG of monoethyl phthalate instead???
-
-
-
-
-
-
-## Survey Weights
-nhanesDesign1 <- svydesign(id = ~psu,
-                          strata = ~strata,
-                          weights = ~persWeight,
-                          nest = TRUE,
-                          data = nhanesAnalysis1)
-
-# Here we use "subset" to tell "nhanesDesignB" that we want to only look at a specific sub-population (i.e., those age less than 18 y.o.)
-# This is important to do. If you don't do this and just restrict it in a different way, your estimates WON'T HAVE CORRECT SEs
-
-ageDesign1 <- subset(nhanesDesign1, age > 17 & 
-                                  age <80)
-
-svymean(~age, ageDesign1, na.rm = TRUE)
-# mean age ///
-
-svymean(~gender, ageDesign1, na.rm = TRUE)
-# boys: //
-# girls: //
-
-output1 <- svyglm(fpl ~ age + gender,
-                 family = gaussian(),
-                 data = nhanesAnalysis1,
-                 design = ageDesign1)
-
-summary(output1)
-#
+svyquantile(~log(monoEthyl), design = nhc, na = TRUE, c(.25,.5,.75),ci=TRUE)
 ```
+
+## Descriptive statistics for categorical variables
+
+(https://www.rdocumentation.org/packages/survey/versions/4.1-1/topics/svytable)
+(https://r-survey.r-forge.r-project.org/survey/html/svychisq.html)
+
+The frequencies in the table can be normalized to some convenient total such as 100 or 1.0 by specifying the Ntotal argument. If the formula has a left-hand side the mean or sum of this variable rather than the frequency is tabulated.
+
+The Ntotal argument can be either a single number or a data frame whose first column gives the (first-stage) sampling strata and second column the population size in each stratum. In this second case the svytable command performs `post-stratification': tabulating and scaling to the population within strata and then adding up the strata.
+
+```{r}
+svytable(~fpl, design = nhc, Ntotal = 100)
+
+svytable(~fpl + citizenship, nhc)
+
+svytable(~fpl + citizenship, nhc, Ntotal = 1.0)
+```
+
+## Graphing of continuous variables
+### Histogram 
+By default, the density is shown on the y-axis.
+
+```{r}
+svyhist(~log(monoEthyl), nhc)
+```
+
+Instead of the density on the y-axis, we can request the count.  
+
+```{r}
+svyhist(~log(monoEthyl), nhc, probability = FALSE)
+```
+
+```{r}
+svyhist(~RIDAGEYR, nhc, probability = FALSE)
+```
+
+### Boxplots
+
+```{r}
+svyboxplot(~log(monoEthyl)~1, nhc, all.outliers=TRUE)
+
+```
+
+We can break the boxplot by a grouping variable. The grouping variable must be a factor.
+
+```{r}
+svyboxplot(~log(monoEthyl)~factor(gender), nhc, all.outliers=TRUE)
+```
+
+### Scatterplot
+Sampling weights corresponding to the bubble size.
+
+```{r}
+svyplot(~log(monoEthyl)+RIDAGEYR, nhc, style="bubble")
+```
+
+### Density and smoothed plots
+
+```{r}
+smth<-svysmooth(~log(monoEthyl), design=nhc)
+plot(smth)
+```
+
+```{r}
+dens<-svysmooth(~log(monoEthyl), design=nhc,bandwidth=30)
+plot(dens)
+```
+
+```{r}
+dens1<-svysmooth(~log(monoEthyl), design=nhc)
+plot(dens1)
+```
+
+
+
+
+
+
+
+
 

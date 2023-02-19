@@ -193,7 +193,7 @@ summary(nhanes$RIDAGEYR)
 
 # add "age" to "nhanes" 
 nhanes$age = factor(ifelse(nhanes$RIDAGEYR >=65,"older adult",
-                    ifelse(nhanes$RIDAGEYR >25 & nhanes$RIDAGEYR<64,"middle-aged",
+                    ifelse(nhanes$RIDAGEYR >25 & nhanes$RIDAGEYR<=64,"middle-aged",
                     ifelse(nhanes$RIDAGEYR >=19 & nhanes$RIDAGEYR<=25,"young adult",
                     ifelse(nhanes$RIDAGEYR <=18,"child",NA)))),
              levels=c("child","young adult", "middle-aged", "older adult"))
