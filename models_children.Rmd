@@ -1,6 +1,6 @@
 ---
 title: "models_children"
-output: html_document
+author: "Gabrielle"
 date: "2023-02-18"
 output: 
   html_document:
@@ -30,9 +30,6 @@ library(haven) # for reading SAS XPT file from NHANES website
 library(survey) # for using survey weights
 library(dplyr) # for data wrangling
 library(forcats)
-
-#install.packages("remotes")
-#remotes::install_github("carlganz/svrepmisc")
 
 library("remotes")
 library("svrepmisc")
@@ -226,43 +223,383 @@ vcov(a)
 svycontrast(a, c( -1, 1))
 ```
 
-We can get the confidence interval around the difference. In this example, we get the 90% confidence interval.
-
-```{r}
-confint(tt, level=0.9)
-```
-
 ## Multiple linear regression
 
 We need to use the summary function to get the standard errors, test statistics and p-values. 
 Let’s start with a model that has no interaction terms.  
-The outcome variable will be monoEthyl, and the predictors will be gender and refED
+The outcome variable will be monoEthyl, and the predictors will be age and refED
 
 ```{r}
-summary(svyglm(log(monoEthyl)~gender+refED, design=nhc, na.action = na.omit))
+summary(svyglm(log(monoEthyl)~age+refED, design=nhc, na.action = na.omit))
 
 ```
 
-Now let’s add an interaction between the two predictor variables.
+### Interaction
+Now let’s add an interaction between the two predictor variables, age and reference person education 
 
 ```{r}
-summary(svyglm(log(monoEthyl)~gender*refED, design=nhc, na.action = na.omit))
-
+summary(svyglm(log(monoEthyl)~age*refED, design=nhc, na.action = na.omit))
 ```
 
 ```{r}
-glm1 <- (svyglm(log(monoEthyl)~gender*refED, design=nhc, na.action = na.omit))
+glm1 <- (svyglm(log(monoEthyl)~gender+refED, design=nhc, na.action = na.omit))
 glm1
 ```
 This example is just like the previous one, only here factor notation is used. 
 This is important when the categorical predictor has more than two levels.
 
 ```{r}
-summary(svyglm(log(monoEthyl)~factor(gender)*factor(ethnicity), design=nhc, na.action = na.omit))
+summary(svyglm(log(monoEthyl)~factor(gender)+factor(ethnicity), design=nhc, na.action = na.omit))
 ```
+
+
+
+
+
+
+
+
+
+
+## Forest Models
+
+### Forest model for Model A:
+#### multivariate regression analysis of socio-demographic variables and phthalates
+```{r}
+modela <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship, design=nhc, na.action = na.omit)
+
+summ(modela)
+
+summ(modela, robust = "HC1") #robust standard errors 
+
+summ(modela, confint = TRUE, digits = 3) #In many cases, you’ll learn more by looking at confidence intervals than p-values. You can request them from summ. default is 95% CIs
+
+summ(modela, confint = TRUE, pvals = FALSE) #DROP the p values all together
+
+# THE GRAPH
+plot_summs(modela)
+plot_summs(modela, robust = TRUE)
+plot_summs(modela, inner_ci_level = .9)
+
+# plot coefficient uncertainty as normal distributions
+plot_summs(modela, plot.distributions = TRUE, inner_ci_level = .9)
+
+# table output for Word and RMarkdown documents
+## error is in the parenthesis
+export_summs(modela, scale = TRUE)
+
+# confidence intervals instead of standard errors
+export_summs(modela, scale = TRUE,
+             error_format = "[{conf.low}, {conf.high}]")
+
+```
+
+#### renaming variables in the forest plot
+
+```{r}
+foresta <- plot_summs(
+        point.size = 3,
+        fontsize=8,
+        colors = "darkseagreen3",
+        modela, coefs = c("Household Education Partial College and Below
+                                 College and Beyond (ref)" = "refEDpartial college and below", 
+                          
+                                 "Age: Middle-Aged
+                                 Child (ref)" = "agemiddle-aged",
+                          
+                                 "Age: Older Adult
+                                 Child (ref)" = "ageolder adult",
+                          
+                                 "Age: Young Adult
+                                 Child (ref)" = "ageyoung adult",
+                          
+                                 "Gender: Male
+                                 Gender: Female (ref)" = "gendermale",
+                          
+                                 "Ethnicity: Non-Hispanic Black
+                                 Mexican American (ref)" = "ethnicityNon-Hispanic Black",
+                          
+                                 "Ethnicity: Non-Hispanic White
+                                 Mexican American (ref)" = "ethnicityNon-Hispanic White",
+                          
+                                 "Ethnicity: Other Hispanic
+                                 Mexican American (ref)" = "ethnicityOther Hispanic",
+                          
+                                 "Ethnicity: Other or Multi
+                                 Mexican American (ref)" = "ethnicityOther or Multi",
+                          
+                                 "Family Income to Poverty Ratio: 2x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 2x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 3x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 3x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 4x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 4x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 5x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 5x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: more than 5x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income more than 5x poverty threshold",
+                          
+                                 "Citizenship Status: Not U.S. Citizen
+                                 U.S. Citizen by birth or naturalization (ref)" = "citizenshipnot U,S, citizen"),
+        
+                          scale = TRUE, robust = TRUE)
+
+foresta
+```
+
+### Forest Model for Model B:
+##### take out gender
+
+```{r}
+modelb <- svyglm(log(monoEthyl)~refED+age+ethnicity+fpl+citizenship, design=nhc, na.action = na.omit)
+
+summ(modelb)
+
+summ(modelb, robust = "HC1") #robust standard errors 
+
+summ(modelb, confint = TRUE, digits = 3) #In many cases, you’ll learn more by looking at confidence intervals than p-values. You can request them from summ. default is 95% CIs
+
+summ(modelb, confint = TRUE, pvals = FALSE) #DROP the p values all together
+
+# THE GRAPH
+plot_summs(modelb)
+plot_summs(modelb, inner_ci_level = .9)
+plot_summs(modelb, robust = TRUE)
+
+# plot coefficient uncertainty as normal distributions
+plot_summs(modelb, plot.distributions = TRUE, inner_ci_level = .9)
+
+# table output for Word and RMarkdown documents
+## error is in the parenthesis
+export_summs(modelb, scale = TRUE)
+
+# confidence intervals instead of standard errors
+export_summs(modelb, scale = TRUE,
+             error_format = "[{conf.low}, {conf.high}]")
+
+```
+
+#### renaming variables in the forest plot
+
+```{r}
+forestb <- plot_summs(
+        point.size = 3,
+        fontsize=8,
+        colors = "darkslateblue",
+        modela, coefs = c("Household Education Partial College and Below
+                                 College and Beyond (ref)" = "refEDpartial college and below", 
+                          
+                                 "Age: Middle-Aged
+                                 Child (ref)" = "agemiddle-aged",
+                          
+                                 "Age: Older Adult
+                                 Child (ref)" = "ageolder adult",
+                          
+                                 "Age: Young Adult
+                                 Child (ref)" = "ageyoung adult",
+                          
+                                 "Ethnicity: Non-Hispanic Black
+                                 Mexican American (ref)" = "ethnicityNon-Hispanic Black",
+                          
+                                 "Ethnicity: Non-Hispanic White
+                                 Mexican American (ref)" = "ethnicityNon-Hispanic White",
+                          
+                                 "Ethnicity: Other Hispanic
+                                 Mexican American (ref)" = "ethnicityOther Hispanic",
+                          
+                                 "Ethnicity: Other or Multi
+                                 Mexican American (ref)" = "ethnicityOther or Multi",
+                          
+                                 "Family Income to Poverty Ratio: 2x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 2x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 3x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 3x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 4x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 4x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 5x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 5x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: more than 5x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income more than 5x poverty threshold",
+                          
+                                 "Citizenship Status: Not U.S. Citizen
+                                 U.S. Citizen by birth or naturalization (ref)" = "citizenshipnot U,S, citizen"),
+        
+                          scale = TRUE, robust = TRUE)
+
+forestb
+```
+
+### Model C
+##### take out gender, citizenship
+
+```{r}
+modelc <- svyglm(log(monoEthyl)~refED+age+ethnicity+fpl, design=nhc, na.action = na.omit)
+
+summ(modelc)
+
+summ(modelc, robust = "HC1") #robust standard errors 
+
+summ(modelc, confint = TRUE, digits = 3) #In many cases, you’ll learn more by looking at confidence intervals than p-values. You can request them from summ. default is 95% CIs
+
+summ(modelc, confint = TRUE, pvals = FALSE) #DROP the p values all together
+
+# THE GRAPH
+plot_summs(modelc)
+plot_summs(modelc, inner_ci_level = .9)
+plot_summs(modelc, robust = TRUE)
+
+# plot coefficient uncertainty as normal distributions
+plot_summs(modelc, plot.distributions = TRUE, inner_ci_level = .9)
+
+# table output for Word and RMarkdown documents
+## error is in the parenthesis
+export_summs(modelc, scale = TRUE)
+
+# confidence intervals instead of standard errors
+export_summs(modelc, scale = TRUE,
+             error_format = "[{conf.low}, {conf.high}]")
+
+```
+
+#### renaming variables in the forest plot
+
+```{r}
+forestc <- plot_summs(
+        point.size = 3,
+        fontsize=8,
+        colors = "deepskyblue4",
+        modela, coefs = c("Household Education Partial College and Below
+                                 College and Beyond (ref)" = "refEDpartial college and below", 
+                          
+                                 "Age: Middle-Aged
+                                 Child (ref)" = "agemiddle-aged",
+                          
+                                 "Age: Older Adult
+                                 Child (ref)" = "ageolder adult",
+                          
+                                 "Age: Young Adult
+                                 Child (ref)" = "ageyoung adult",
+                          
+                                 "Ethnicity: Non-Hispanic Black
+                                 Mexican American (ref)" = "ethnicityNon-Hispanic Black",
+                          
+                                 "Ethnicity: Non-Hispanic White
+                                 Mexican American (ref)" = "ethnicityNon-Hispanic White",
+                          
+                                 "Ethnicity: Other Hispanic
+                                 Mexican American (ref)" = "ethnicityOther Hispanic",
+                          
+                                 "Ethnicity: Other or Multi
+                                 Mexican American (ref)" = "ethnicityOther or Multi",
+                          
+                                 "Family Income to Poverty Ratio: 2x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 2x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 3x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 3x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 4x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 4x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 5x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 5x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: more than 5x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income more than 5x poverty threshold"),
+        
+                          scale = TRUE, robust = TRUE)
+
+forestc
+```
+
+
+
+
+
+
+
+
+
+
+## Bayesian Information Criterion (BIC)
+The model that performs best is Model B, a simple linear regression showing the logged mono-ethyl phthalate as a function of the reference person's education level, the participant's age, the participant's ethnicity, the participant's family income to poverty ratio, and the participant's citizenship status.
+
+The delta BIC for Model C is 72.136, which is far beyond the BIC <7 threshold, so it is a very unlikely model, and therefore, we will dismiss Model C. This reinforces the idea that citizenship status matters substantially to the question of determining the logged phthalate level in individuals.
+
+Model A and Model B are quite similar - the only difference is that Model B does not include gender. Model A, which is the model performing second best, has a delta BIC = 6.590 (and still under the BIC < 7 threshold). 
+
+## ANOVA
+
+An ANOVA test is a type of statistical test used to determine if there is a statistically significant difference between two or more categorical groups by testing for differences of means using variance.
+
+## Wald test
+
+A parametric statistical measure to confirm whether a set of independent variables are collectively 'significant' for a model or not
+
+```{r, results = TRUE}
+
+modela<-svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship, design=nhc, na.action = na.omit)
+
+modelb<-svyglm(log(monoEthyl)~refED+age+ethnicity+fpl+citizenship, design=nhc, na.action = na.omit)
+
+modelc<-svyglm(log(monoEthyl)~refED+age+ethnicity+fpl, design=nhc, na.action = na.omit)
+
+anova(modela)
+anova(modelc, modela)
+anova(modela, modelb, method = "Wald")
+# wald test for gender, p =-.86238
+anova(modelb, modelc, method = "Wald")
+# wald test for citizenship, p =0.0045171
+anova(modela, modelc, method = "Wald")
+# wald test for gender citizenship, p = 0.015958
+
+
+# BIC(modela, modelb, maximal=modela)
+# BIC(modelb, modelc, maximal=modelb)
+### ???? see questions in "meetings with susie" google doc
+
+# BIC_list <- c(BIC(modela), BIC(modelb), BIC(modelc))
+
+# model_output <- rbind(data.frame(glance(modela)), data.frame(glance(modelb)), data.frame(glance(modelc))) %>% select(BIC)
+
+# model_output <- mutate(model_output, delta.BIC = BIC-min(BIC_list))
+# model_output$model <- c("Model A", "Model B", "Model C")
+# model_output <- model_output[,c("model", "BIC", "delta.BIC")]
+
+# kable(model_output, format = "markdown", digits = 3, caption = "BIC, and Delta.BIC for the models. Delta BIC > 7 indicates models that should be dismissed from further consideration.")
+```
+
+
+
+
+
+
+
+
+
+
 
 ```{r}
 ols1 <- (svyglm(log(monoEthyl)~1, design=nhc, na.action = na.omit))
+# ols2 <- 
+# ols3 <- 
+
+modela<-svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship, design=nhc, na.action = na.omit)
+
+modelb<-svyglm(log(monoEthyl)~refED+age+ethnicity+fpl+citizenship, design=nhc, na.action = na.omit)
+
+modelc<-svyglm(log(monoEthyl)~refED+age+ethnicity+fpl, design=nhc, na.action = na.omit)
+  
+  
+ols1
 predmarg<-svypredmeans(ols1, ~interaction(gender,ethnicity))
 predmarg
 ```
@@ -280,11 +617,9 @@ This is an example of a median test.
 ```{r}
 mtest <- svyranktest(log(monoEthyl)~age, design = nhc, na = TRUE, test=("median"))
 mtest
-
 ```
 
 This is an example of a Kruskal Wallis test, which is the non-parametric analog of a one-way ANOVA.
-
 ```{r}
 kwtest <- svyranktest(log(monoEthyl)~refED, design = nhc, na = TRUE, test=("KruskalWallis"))
 kwtest
@@ -295,14 +630,14 @@ Let’s see a few examples of logistic regression.
 "as.factor" is key to getting this code running
 
 ```{r}
-logit1 <- (svyglm(as.factor(DMDCITZN)~as.factor(DMDHREDU)+RIDAGEYR, family=quasibinomial, design=nhc, na.action = na.omit))
+logit1 <- (svyglm(as.factor(log(monoEthyl))~as.factor(refED)+RIDAGEYR, family=quasibinomial, design=nhc, na.action = na.omit))
 summary(logit1)
 ```
 
-In the next example, we will run the logistic regression on a subpopulation (respondents over age 20).
+Logistic regression on a subpopulation (respondents over age 20).
 
 ```{r}
-subset1 <- subset(nhc, RIDAGEYR > 19)
+subset1 <- subset(nhc, RIDAGEYR > 18)
 logit2 <- (svyglm(as.factor(log(monoEthyl))~as.factor(refED)+RIDAGEYR, family=quasibinomial, design=subset1, na.action = na.omit))
 summary(logit2)
 ```
