@@ -1,5 +1,5 @@
 ---
-title: "models_children"
+title: "models_working"
 author: "Gabrielle"
 date: "2023-02-18"
 output: 
@@ -532,13 +532,14 @@ forestc
 ## Bayesian Information Criterion (BIC)
 The model that performs best is Model B, a simple linear regression showing the logged mono-ethyl phthalate as a function of the reference person's education level, the participant's age, the participant's ethnicity, the participant's family income to poverty ratio, and the participant's citizenship status.
 
-The delta BIC for Model C is 72.136, which is far beyond the BIC <7 threshold, so it is a very unlikely model, and therefore, we will dismiss Model C. This reinforces the idea that citizenship status matters substantially to the question of determining the logged phthalate level in individuals.
+XXX The delta BIC for Model C is 72.136, which is far beyond the BIC <7 threshold, so it is a very unlikely model, and therefore, we will dismiss Model C. This reinforces the idea that citizenship status matters substantially to the question of determining the logged phthalate level in individuals.
 
-Model A and Model B are quite similar - the only difference is that Model B does not include gender. Model A, which is the model performing second best, has a delta BIC = 6.590 (and still under the BIC < 7 threshold). 
+XXX Model A and Model B are quite similar - the only difference is that Model B does not include gender. Model A, which is the model performing second best, has a delta BIC = 6.590 (and still under the BIC < 7 threshold). 
 
 ## ANOVA
 
 An ANOVA test is a type of statistical test used to determine if there is a statistically significant difference between two or more categorical groups by testing for differences of means using variance.
+
 
 ## Wald test
 
@@ -552,6 +553,31 @@ modelb<-svyglm(log(monoEthyl)~refED+age+ethnicity+fpl+citizenship, design=nhc, n
 
 modelc<-svyglm(log(monoEthyl)~refED+age+ethnicity+fpl, design=nhc, na.action = na.omit)
 
+modeld<-svyglm(log(monoEthyl)~age+ethnicity+fpl, design=nhc, na.action = na.omit)
+
+modele<-svyglm(log(monoEthyl)~refED+age+ethnicity+fpl+citizenship+childED, design=nhc, na.action = na.omit)
+
+########## BIC
+BIC(modela, modelb, maximal=modela)
+BIC(modelb, modelc, maximal=modelb)
+BIC(modela, modelc, maximal=modela)
+BIC(modela, modelb, modelc, maximal=modela)
+
+### ???? see questions in "meetings with susie" google doc
+
+BIC_list <- c(BIC(modela, maximal=modela), BIC(modelb, maximal=modela), BIC(modelc, maximal=modela))
+
+model_output <- rbind(data.frame(glance(modela)), data.frame(glance(modelb)), data.frame(glance(modelc))) %>% select(BIC)
+
+model_output <- mutate(model_output, delta.BIC = BIC-min(BIC_list))
+model_output$model <- c("Model A", "Model B", "Model C")
+model_output <- model_output[,c("model", "BIC", "delta.BIC")]
+
+kable(model_output, format = "markdown", digits = 3, caption = "BIC, and Delta.BIC for the models. Delta BIC > 7 indicates models that should be dismissed from further consideration.")
+
+
+########## ANOVA
+########## Wald test
 anova(modela)
 anova(modelc, modela)
 anova(modela, modelb, method = "Wald")
@@ -560,21 +586,13 @@ anova(modelb, modelc, method = "Wald")
 # wald test for citizenship, p =0.0045171
 anova(modela, modelc, method = "Wald")
 # wald test for gender citizenship, p = 0.015958
+anova(modela, modeld, method = "Wald")
+# wald test for refeD gender citizenship, p = 2.1802e-11
 
-
-# BIC(modela, modelb, maximal=modela)
-# BIC(modelb, modelc, maximal=modelb)
-### ???? see questions in "meetings with susie" google doc
-
-# BIC_list <- c(BIC(modela), BIC(modelb), BIC(modelc))
-
-# model_output <- rbind(data.frame(glance(modela)), data.frame(glance(modelb)), data.frame(glance(modelc))) %>% select(BIC)
-
-# model_output <- mutate(model_output, delta.BIC = BIC-min(BIC_list))
-# model_output$model <- c("Model A", "Model B", "Model C")
-# model_output <- model_output[,c("model", "BIC", "delta.BIC")]
-
-# kable(model_output, format = "markdown", digits = 3, caption = "BIC, and Delta.BIC for the models. Delta BIC > 7 indicates models that should be dismissed from further consideration.")
+anova(modele)
+# anova(modela, modele, method = "Wald")
+## cannot do a wald test due to models having different number of observations... does this mean that childED is only using 34% of the data, because 66% of it is missing
+vis_miss(fullNHANES_recat, sort_miss = TRUE)
 ```
 
 
@@ -584,25 +602,108 @@ anova(modela, modelc, method = "Wald")
 
 
 
+## Boxplots, bivariate analyses
+```{r}
+# change the noNAs dataset with each boxplot I create:
+## one for: refED age gender ethnicity fpl citizenship
+
+noNAs = fullNHANES_recat %>% filter(!is.na(citizenship)) %>% filter(!is.na(monoEthyl))
+                                                                                                            
+
+box_citizenship <- ggplot(data = noNAs, design=nhc,
+                      aes(x=log(monoEthyl), y=citizenship, fill=citizenship)) +
+  scale_fill_brewer(palette="PuBuGn") +
+  geom_boxplot() +
+  theme(text = element_text(size=12)) +
+  xlab("(logged) Mono-Ethyl Phthalate Level (ng/mL)") +
+  ylab("Participant Citizenship Status") +
+ggtitle("Participant Citizenship Status and Logged Phthalate Level")
 
 
+box_citizenship
+```
+
+
+
+
+
+
+
+
+## Ordinary Least Squares (OLS)
+website: https://www.statology.org/ols-regression-in-r/
+Ordinary least squares (OLS) regression is a method that allows us to find a line that best describes the relationship between one or more predictor variables and a response variable
+
+## Akaike Information Criterion (AIC)
+AIC is an estimator of prediction error and thereby relative quality of statistical models for a given set of data.
 
 ```{r}
 ols1 <- (svyglm(log(monoEthyl)~1, design=nhc, na.action = na.omit))
-# ols2 <- 
-# ols3 <- 
-
-modela<-svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship, design=nhc, na.action = na.omit)
-
-modelb<-svyglm(log(monoEthyl)~refED+age+ethnicity+fpl+citizenship, design=nhc, na.action = na.omit)
-
-modelc<-svyglm(log(monoEthyl)~refED+age+ethnicity+fpl, design=nhc, na.action = na.omit)
-  
-  
 ols1
+# this gives an AIC of 88140
+## ^^ this is just practice... from the article I read online
+### what does ~1 mean?
+
+# modela <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship, design=nhc, na.action = na.omit)
+ols_a <- (svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship, design=nhc, na.action = na.omit))
+ols_a
+# this gives an AIC of 77,730
+
+# modelb <- svyglm(log(monoEthyl)~refED+age+ethnicity+fpl+citizenship, design=nhc, na.action = na.omit)
+ols_b <- (svyglm(log(monoEthyl)~refED+age+ethnicity+fpl+citizenship, design=nhc, na.action = na.omit))
+ols_b
+# this gives an AIC of 77,730
+# this means that taking gender out does not improve or decrease the prediction of monoEthyl?
+
+# modelc <- svyglm(log(monoEthyl)~refED+age+ethnicity+fpl, design=nhc, na.action = na.omit)
+ols_c <- (svyglm(log(monoEthyl)~refED+age+ethnicity+fpl, design=nhc, na.action = na.omit))
+ols_c
+# this gives an AIC of 77,810
+
+#(try)
+# take out ethnicity
+ols_d <- (svyglm(log(monoEthyl)~refED+age+fpl+citizenship, design=nhc, na.action = na.omit))
+ols_d
+# this gives an AIC of 78,430
+
+# take out age
+ols_e <- (svyglm(log(monoEthyl)~refED+ethnicity+fpl+citizenship, design=nhc, na.action = na.omit))
+ols_e
+# this gives an AIC of 77,910
+
+# take out refED
+ols_f <- (svyglm(log(monoEthyl)~age+ethnicity+fpl+citizenship, design=nhc, na.action = na.omit))
+ols_f
+# this gives an AIC of 80,310
+
+# take out fpl
+ols_g <- (svyglm(log(monoEthyl)~refED+age+ethnicity+citizenship, design=nhc, na.action = na.omit))
+ols_g
+# this gives an AIC of 83,550
+
+# take out citizenship
+ols_h <- (svyglm(log(monoEthyl)~refED+age+ethnicity+fpl, design=nhc, na.action = na.omit))
+ols_h
+# this gives an AIC of 77,810
+
+# add in childED 
+ols_i <- (svyglm(log(monoEthyl)~refED+age+ethnicity+fpl+citizenship+childED, design=nhc, na.action = na.omit))
+ols_i
+# this gives an AIC of 24,800
+
+# add in adultED
+ols_j <- (svyglm(log(monoEthyl)~refED+age+ethnicity+fpl+citizenship+adultED, design=nhc, na.action = na.omit))
+ols_j
+# this gives an AIC of 49,030
+```
+
+
+```{r}
 predmarg<-svypredmeans(ols1, ~interaction(gender,ethnicity))
 predmarg
 ```
+
+
 ## Non-parametric tests
 
 Non-parametric tests can also be done. Let’s start with a Wilcoxon signed rank test, which is the non-parametric analog of an independent-samples t-test.
