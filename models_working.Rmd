@@ -522,6 +522,304 @@ forestc
 
 
 
+## For "Results" on "Draft_21feb" google doc:
+
+### SUBSET: ADULTS
+#### plus, add in "adultED"
+```{r}
+subset_adult <- subset(nhc, RIDAGEYR > 19)
+
+model_adult <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship+adultED, design=subset_adult, na.action = na.omit)
+
+summ(model_adult)
+
+summ(model_adult, robust = "HC1") #robust standard errors 
+
+summ(model_adult, confint = TRUE, digits = 3) #In many cases, you’ll learn more by looking at confidence intervals than p-values. You can request them from summ. default is 95% CIs
+
+summ(model_adult, confint = TRUE, pvals = FALSE) #DROP the p values all together
+
+# THE GRAPH
+plot_summs(model_adult)
+plot_summs(model_adult, inner_ci_level = .9)
+plot_summs(model_adult, robust = TRUE)
+
+# plot coefficient uncertainty as normal distributions
+plot_summs(model_adult, plot.distributions = TRUE, inner_ci_level = .9)
+
+# table output for Word and RMarkdown documents
+## error is in the parenthesis
+export_summs(model_adult, scale = TRUE)
+
+# confidence intervals instead of standard errors
+export_summs(model_adult, scale = TRUE,
+             error_format = "[{conf.low}, {conf.high}]")
+
+
+
+
+
+
+# check AIC of Model E and for interaction
+subset_adult <- subset(nhc, RIDAGEYR > 19)
+
+model_adult <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship+adultED, design=subset_adult, na.action = na.omit)
+
+ols_adult <- (svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship+adultED, design=subset_adult, na.action = na.omit))
+ols_adult
+# this gives an AIC of 49,030
+# with gender, AIC is the same
+
+# checking adultED*fpl
+model_adult_int <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl*adultED+citizenship, design=subset_adult, na.action = na.omit)
+
+ols_adult_int <- (svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl*adultED+citizenship, design=subset_adult, na.action = na.omit))
+ols_adult_int
+# this gives an AIC of 49,040
+
+```
+
+### SUBSET: CHILDREN
+#### plus, add in "childED"
+```{r}
+subset_child <- subset(nhc, RIDAGEYR <= 19)
+
+# model_child <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship+childED, design=subset_child, na.action = na.omit)
+
+# "model M" in document
+
+model_child <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity*childED+fpl*childED+citizenship, design=subset_child, na.action = na.omit)
+
+summ(model_child)
+
+summ(model_child, robust = "HC1") #robust standard errors 
+
+summ(model_child, confint = TRUE, digits = 3) #In many cases, you’ll learn more by looking at confidence intervals than p-values. You can request them from summ. default is 95% CIs
+
+summ(model_child, confint = TRUE, pvals = FALSE) #DROP the p values all together
+
+# THE GRAPH
+plot_summs(model_child)
+plot_summs(model_child, inner_ci_level = .9)
+plot_summs(model_child, robust = TRUE)
+
+# plot coefficient uncertainty as normal distributions
+plot_summs(model_child, plot.distributions = TRUE, inner_ci_level = .9)
+
+# table output for Word and RMarkdown documents
+## error is in the parenthesis
+export_summs(model_child, scale = TRUE)
+
+# confidence intervals instead of standard errors
+export_summs(model_child, scale = TRUE,
+             error_format = "[{conf.low}, {conf.high}]")
+
+
+
+
+
+
+### check AIC of Model D for interaction
+subset_child <- subset(nhc, RIDAGEYR <= 19)
+
+model_child <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship+childED, design=subset_child, na.action = na.omit)
+
+ols_child <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship+childED, design=subset_child, na.action = na.omit)
+ols_child 
+# this gives an AIC of 24,780
+# (without gender, AIC of 24,800)
+
+
+# checking childED*fpl
+model_child_int <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl*childED+citizenship, design=subset_child, na.action = na.omit)
+
+ols_child_int <- (svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl*childED+citizenship, design=nhc, na.action = na.omit))
+ols_child_int
+# this gives and AIC 24,770
+
+# checking childED*ethnicity
+model_child_int <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity*childED+fpl+citizenship, design=subset_child, na.action = na.omit)
+
+ols_child_int <- (svyglm(log(monoEthyl)~refED+age+gender+ethnicity*childED+fpl+citizenship, design=nhc, na.action = na.omit))
+ols_child_int
+# this gives and AIC 24,770
+
+# checking childED*citizenship
+model_child_int <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship*childED, design=subset_child, na.action = na.omit)
+
+ols_child_int <- (svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship*childED, design=nhc, na.action = na.omit))
+ols_child_int
+# this gives and AIC 24,780
+```
+
+### no subset: WHOLE sample
+```{r}
+model_whole <- svyglm(log(monoEthyl)~refED+age+ethnicity+fpl+citizenship, design=nhc, na.action = na.omit)
+
+summ(model_whole)
+
+summ(model_whole, robust = "HC1") #robust standard errors 
+
+summ(model_whole, confint = TRUE, digits = 3) #In many cases, you’ll learn more by looking at confidence intervals than p-values. You can request them from summ. default is 95% CIs
+
+summ(model_whole, confint = TRUE, pvals = FALSE) #DROP the p values all together
+
+# THE GRAPH
+plot_summs(model_whole)
+plot_summs(model_whole, inner_ci_level = .9)
+plot_summs(model_whole, robust = TRUE)
+
+# plot coefficient uncertainty as normal distributions
+plot_summs(model_whole, plot.distributions = TRUE, inner_ci_level = .9)
+
+# table output for Word and RMarkdown documents
+## error is in the parenthesis
+export_summs(model_whole, scale = TRUE)
+
+# confidence intervals instead of standard errors
+export_summs(model_whole, scale = TRUE,
+             error_format = "[{conf.low}, {conf.high}]")
+```
+
+
+
+
+
+
+
+
+### INTERACTIONS?
+
+#### whole population:
+```{r}
+# run each of the next three "model_whole" one at a time, to check for each interaction
+
+## interaction: refED*age
+# model_whole <- svyglm(log(monoEthyl)~refED*age+gender+ethnicity+fpl+citizenship, design=nhc, na.action = na.omit)
+
+## interaction: age*fpl
+# model_whole <- svyglm(log(monoEthyl)~refED+gender+ethnicity+age*fpl+citizenship, design=nhc, na.action = na.omit)
+
+## interaction: ethnicity*fpl
+# model_whole <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity*fpl+citizenship, design=nhc, na.action = na.omit)
+
+## interaction: refED*fpl
+model_whole <- svyglm(log(monoEthyl)~refED*fpl+gender+ethnicity+age+citizenship, design=nhc, na.action = na.omit)
+
+summ(model_whole)
+
+summ(model_whole, robust = "HC1") #robust standard errors 
+
+summ(model_whole, confint = TRUE, digits = 3) #In many cases, you’ll learn more by looking at confidence intervals than p-values. You can request them from summ. default is 95% CIs
+
+summ(model_whole, confint = TRUE, pvals = FALSE) #DROP the p values all together
+
+# THE GRAPH
+plot_summs(model_whole)
+plot_summs(model_whole, inner_ci_level = .9)
+plot_summs(model_whole, robust = TRUE)
+
+# plot coefficient uncertainty as normal distributions
+plot_summs(model_whole, plot.distributions = TRUE, inner_ci_level = .9)
+
+# table output for Word and RMarkdown documents
+## error is in the parenthesis
+export_summs(model_whole, scale = TRUE)
+
+# confidence intervals instead of standard errors
+export_summs(model_whole, scale = TRUE,
+             error_format = "[{conf.low}, {conf.high}]")
+```
+
+### children:
+```{r}
+# run each of the next three "model_whole" one at a time, to check for each interaction
+
+subset_child <- subset(nhc, RIDAGEYR <= 19)
+
+## interaction: childED*fpl
+# model_child <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl*childED+citizenship, design=subset_child, na.action = na.omit)
+
+## interaction: childED*ethnicity
+# model_child <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity*childED+fpl+citizenship, design=subset_child, na.action = na.omit)
+
+## interaction: childED*citizenship
+model_child <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship*childED, design=subset_child, na.action = na.omit)
+
+
+summ(model_child)
+
+summ(model_child, robust = "HC1") #robust standard errors 
+
+summ(model_child, confint = TRUE, digits = 3) #In many cases, you’ll learn more by looking at confidence intervals than p-values. You can request them from summ. default is 95% CIs
+
+summ(model_child, confint = TRUE, pvals = FALSE) #DROP the p values all together
+
+# THE GRAPH
+plot_summs(model_child)
+plot_summs(model_child, inner_ci_level = .9)
+plot_summs(model_child, robust = TRUE)
+
+# plot coefficient uncertainty as normal distributions
+plot_summs(model_child, plot.distributions = TRUE, inner_ci_level = .9)
+
+# table output for Word and RMarkdown documents
+## error is in the parenthesis
+export_summs(model_child, scale = TRUE)
+
+# confidence intervals instead of standard errors
+export_summs(model_child, scale = TRUE,
+             error_format = "[{conf.low}, {conf.high}]")
+```
+
+## adults: 
+```{r}
+# run each of the next three "model_whole" one at a time, to check for each interaction
+
+subset_adult <- subset(nhc, RIDAGEYR > 19)
+
+## interaction: refED*adultED
+# model_adult <- svyglm(log(monoEthyl)~refED*adultED+age+gender+ethnicity+fpl+citizenship, design=subset_adult, na.action = na.omit)
+
+## interaction: adultED*fpl
+# model_adult <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl*adultED+citizenship, design=subset_adult, na.action = na.omit)
+
+## interaction: adultED*ethnicity
+# model_adult <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity*adultED+fpl+citizenship, design=subset_adult, na.action = na.omit)
+
+# interaction: adultED*citizenship
+model_adult <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship*adultED, design=subset_adult, na.action = na.omit)
+
+
+
+summ(model_adult)
+
+summ(model_adult, robust = "HC1") #robust standard errors 
+
+summ(model_adult, confint = TRUE, digits = 3) #In many cases, you’ll learn more by looking at confidence intervals than p-values. You can request them from summ. default is 95% CIs
+
+summ(model_adult, confint = TRUE, pvals = FALSE) #DROP the p values all together
+
+# THE GRAPH
+plot_summs(model_adult)
+plot_summs(model_adult, inner_ci_level = .9)
+plot_summs(model_adult, robust = TRUE)
+
+# plot coefficient uncertainty as normal distributions
+plot_summs(model_adult, plot.distributions = TRUE, inner_ci_level = .9)
+
+# table output for Word and RMarkdown documents
+## error is in the parenthesis
+export_summs(model_adult, scale = TRUE)
+
+# confidence intervals instead of standard errors
+export_summs(model_adult, scale = TRUE,
+             error_format = "[{conf.low}, {conf.high}]")
+```
+
+
+
+
 
 
 
@@ -659,6 +957,7 @@ ols_b
 ols_c <- (svyglm(log(monoEthyl)~refED+age+ethnicity+fpl, design=nhc, na.action = na.omit))
 ols_c
 # this gives an AIC of 77,810
+# this means that taking out citizenship decreases our ability to predict phthalate level?
 
 #(try)
 # take out ethnicity
@@ -686,15 +985,17 @@ ols_h <- (svyglm(log(monoEthyl)~refED+age+ethnicity+fpl, design=nhc, na.action =
 ols_h
 # this gives an AIC of 77,810
 
-# add in childED 
-ols_i <- (svyglm(log(monoEthyl)~refED+age+ethnicity+fpl+citizenship+childED, design=nhc, na.action = na.omit))
+# add in childED and gender
+ols_i <- (svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship+childED, design=nhc, na.action = na.omit))
 ols_i
-# this gives an AIC of 24,800
+# this gives an AIC of 24,780
+# (without gender, AIC of 24,800)
 
 # add in adultED
 ols_j <- (svyglm(log(monoEthyl)~refED+age+ethnicity+fpl+citizenship+adultED, design=nhc, na.action = na.omit))
 ols_j
 # this gives an AIC of 49,030
+# with gender, AIC is the same
 ```
 
 
@@ -735,12 +1036,16 @@ logit1 <- (svyglm(as.factor(log(monoEthyl))~as.factor(refED)+RIDAGEYR, family=qu
 summary(logit1)
 ```
 
-Logistic regression on a subpopulation (respondents over age 20).
+## Logistic regression on a subpopulation (respondents age ____ )
 
 ```{r}
-subset1 <- subset(nhc, RIDAGEYR > 18)
-logit2 <- (svyglm(as.factor(log(monoEthyl))~as.factor(refED)+RIDAGEYR, family=quasibinomial, design=subset1, na.action = na.omit))
+subset1 <- subset(nhc, RIDAGEYR > 19)
+logit2 <- (svyglm(as.factor(log(monoEthyl))~as.factor(refED)+RIDAGEYR+as.factor(ethnicity)+as.factor(fpl)+as.factor(citizenship), family=quasibinomial, design=subset1, na.action = na.omit))
 summary(logit2)
+
+logit3 <- (svyglm(as.factor(log(monoEthyl))~as.factor(adultED)+RIDAGEYR+as.factor(fpl), family=quasibinomial, design=subset1, na.action = na.omit))
+summary(logit3)
+
 ```
 
 We can also get a Wald test for a variable in the model.
