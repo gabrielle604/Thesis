@@ -1,0 +1,501 @@
+---
+title: "march_draft"
+output: html_document
+date: "2023-03-07"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(here)
+library(ggpubr) # for some graphic applications that extend ggplot2
+library(janitor)
+library(broom) # used to make tables
+library(knitr) # used to make table
+library(car) # has leveneTest 
+library(foreign) # to read in NHANES data
+library(rstanarm) # for the model fitting
+library(jtools) # Load jtools, for forest plots
+library(sandwich) # needed for robust standard errors in forest plot
+library(huxtable) # needed to be able to export table of forest plot values
+library(broom.mixed) # used in making tables
+library(visdat)
+library(ggplot2)
+
+library(haven) # for reading SAS XPT file from NHANES website
+library(survey) # for using survey weights
+library(dplyr) # for data wrangling
+library(forcats)
+
+library("remotes")
+library("svrepmisc")
+
+```
+
+## Load the data
+
+```{r}
+fullNHANES_recat <- read_csv(here("cleaned_data","fullNHANES_recat.csv"))
+```
+
+## The svydesign function
+
+Before we can start our analyses, we need to use the svydesign function from the "survey" package written by Thomas Lumley. The svydesign function tells R about the design elements in the survey. Once this command has been issued, all that needs to be done for the analyses is use the object that contains this information in each command. Because the 2001-2016 NHANES data were released with a sampling weight (wtint2yr), a PSU variable (sdmvpsu) and a strata variable (sdmvstra), we will use these our svydesign function.
+
+```{r}
+nhc <- svydesign(id=~SDMVPSU, weights=~WTINT2YR,strata=~SDMVSTRA, nest=TRUE, survey.lonely.psu = "adjust", data=fullNHANES_recat)
+nhc
+```
+
+## We can get additional information about the sample, such as the number of PSUs per strata, by using the summary function.
+
+```{r}
+summary(nhc)
+```
+
+### Subpopulation Analysis
+
+### SUBSET: ADULTS
+#### plus, add in "adultED"
+```{r}
+subset_adult <- subset(nhc, RIDAGEYR >= 19)
+
+model_adult <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship+adultED, design=subset_adult, na.action = na.omit)
+
+summ(model_adult)
+
+summ(model_adult, robust = "HC1") #robust standard errors 
+
+summ(model_adult, confint = TRUE, digits = 3) #In many cases, you’ll learn more by looking at confidence intervals than p-values. You can request them from summ. default is 95% CIs
+
+summ(model_adult, confint = TRUE, pvals = FALSE) #DROP the p values all together
+
+# THE GRAPH
+plot_summs(model_adult)
+plot_summs(model_adult, inner_ci_level = .9)
+plot_summs(model_adult, robust = TRUE)
+
+# plot coefficient uncertainty as normal distributions
+plot_summs(model_adult, plot.distributions = TRUE, inner_ci_level = .9)
+
+# table output for Word and RMarkdown documents
+## error is in the parenthesis
+export_summs(model_adult, scale = TRUE)
+
+# confidence intervals instead of standard errors
+export_summs(model_adult, scale = TRUE,
+             error_format = "[{conf.low}, {conf.high}]")
+
+
+### check AIC 
+subset_adult <- subset(nhc, RIDAGEYR >= 19)
+
+model_adult <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship+adultED, design=subset_adult, na.action = na.omit)
+
+ols_adult <- (svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship+adultED, design=subset_adult, na.action = na.omit))
+ols_adult
+# this gives an AIC of 49,030
+
+# comparing to without adultED
+model_adult_noED <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship, design=subset_adult, na.action = na.omit)
+
+ols_adult_noED <- (svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship, design=subset_adult, na.action = na.omit))
+
+ols_adult_noED
+# this gives an AIC of 51,000
+
+```
+
+
+## forest plot, adult
+#### renaming variables in the forest plot
+
+```{r}
+model_adult <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship+adultED, design=subset_adult, na.action = na.omit)
+
+forest_adult <- plot_summs(
+        point.size = 3,
+        fontsize=8,
+        colors = "darkslateblue",
+        model_adult, coefs = c("Household Education Partial College and Below
+                                 College and Beyond (ref)" = "refEDpartial college and below", 
+                          
+                                 "Age: Older Adult
+                                 Middle-Aged (ref)" = "ageolder adult",
+                          
+                                 "Age: Young Adult
+                                 Middle-Aged (ref)" = "ageyoung adult",
+                          
+                                 "Gender: Male
+                                 Gender: Female (ref)" = "gendermale",
+                          
+                                 "Ethnicity: Non-Hispanic Black
+                                 Mexican American (ref)" = "ethnicityNon-Hispanic Black",
+                          
+                                 "Ethnicity: Non-Hispanic White
+                                 Mexican American (ref)" = "ethnicityNon-Hispanic White",
+                          
+                                 "Ethnicity: Other Hispanic
+                                 Mexican American (ref)" = "ethnicityOther Hispanic",
+                          
+                                 "Ethnicity: Other or Multi
+                                 Mexican American (ref)" = "ethnicityOther or Multi",
+                          
+                                 "Family Income to Poverty Ratio: 2x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 2x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 3x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 3x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 4x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 4x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 5x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 5x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: more than 5x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income more than 5x poverty threshold",
+                          
+                                 "Citizenship Status: Not U.S. Citizen
+                                 U.S. Citizen by birth or naturalization (ref)" = "citizenshipnot U,S, citizen",
+        
+                                 "Participant Education: College Grad or Above
+                                  9th-11th grade (ref)" = "adultEDcollege grad or above",
+        
+                                 "Participant Education: High School Grad/GED
+                                  9th-11th grade (ref)" = "adultEDhigh school grad/GED",
+        
+                                 "Participant Education: Less Than 9th Grade
+                                  9th-11th grade (ref)" = "adultEDless than 9th grade",
+        
+                                 "Participant Education: Some College or AA
+                                  9th-11th grade (ref)" = "adultEDsome college or AA"),
+                               
+                          scale = TRUE, robust = TRUE)
+
+forest_adult
+```
+
+
+
+
+
+
+
+### SUBSET: CHILDREN
+
+```{r}
+subset_child <- subset(nhc, RIDAGEYR < 19)
+
+model_child <- svyglm(log(monoEthyl)~refED+gender+ethnicity+fpl+citizenship, design=subset_child, na.action = na.omit)
+
+summ(model_child)
+
+summ(model_child, robust = "HC1") #robust standard errors 
+
+summ(model_child, confint = TRUE, digits = 3) #In many cases, you’ll learn more by looking at confidence intervals than p-values. You can request them from summ. default is 95% CIs
+
+summ(model_child, confint = TRUE, pvals = FALSE) #DROP the p values all together
+
+# THE GRAPH
+plot_summs(model_child)
+plot_summs(model_child, inner_ci_level = .9)
+plot_summs(model_child, robust = TRUE)
+
+# plot coefficient uncertainty as normal distributions
+plot_summs(model_child, plot.distributions = TRUE, inner_ci_level = .9)
+
+# table output for Word and RMarkdown documents
+## error is in the parenthesis
+export_summs(model_child, scale = TRUE)
+
+# confidence intervals instead of standard errors
+export_summs(model_child, scale = TRUE,
+             error_format = "[{conf.low}, {conf.high}]")
+
+
+
+
+
+
+### check AIC 
+subset_child <- subset(nhc, RIDAGEYR < 19)
+
+model_child <- svyglm(log(monoEthyl)~refED+gender+ethnicity+fpl+citizenship, design=subset_child, na.action = na.omit)
+
+ols_child <- svyglm(log(monoEthyl)~refED+gender+ethnicity+fpl+citizenship, design=subset_child, na.action = na.omit)
+ols_child 
+# this gives an AIC of 25,010
+
+```
+
+## forest plot, children
+#### renaming variables in the forest plot
+
+```{r}
+model_child <- svyglm(log(monoEthyl)~refED+gender+ethnicity+fpl+citizenship, design=subset_child, na.action = na.omit)
+
+forest_child <- plot_summs(
+        point.size = 3,
+        fontsize=8,
+        colors = "darkslateblue",
+        model_child, coefs = c("Household Education Partial College and Below
+                                 College and Beyond (ref)" = "refEDpartial college and below", 
+                          
+                                 "Gender: Male
+                                 Gender: Female (ref)" = "gendermale",
+                          
+                                 "Ethnicity: Non-Hispanic Black
+                                 Mexican American (ref)" = "ethnicityNon-Hispanic Black",
+                          
+                                 "Ethnicity: Non-Hispanic White
+                                 Mexican American (ref)" = "ethnicityNon-Hispanic White",
+                          
+                                 "Ethnicity: Other Hispanic
+                                 Mexican American (ref)" = "ethnicityOther Hispanic",
+                          
+                                 "Ethnicity: Other or Multi
+                                 Mexican American (ref)" = "ethnicityOther or Multi",
+                          
+                                 "Family Income to Poverty Ratio: 2x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 2x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 3x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 3x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 4x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 4x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 5x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 5x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: more than 5x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income more than 5x poverty threshold",
+                          
+                                 "Citizenship Status: Not U.S. Citizen
+                                 U.S. Citizen by birth or naturalization (ref)" = "citizenshipnot U,S, citizen"),
+        
+                          scale = TRUE, robust = TRUE)
+
+forest_child
+```
+
+
+
+
+
+
+
+
+
+### no subset: WHOLE sample
+
+```{r}
+model_whole <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship, design=nhc, na.action = na.omit)
+
+summ(model_whole)
+
+summ(model_whole, robust = "HC1") #robust standard errors 
+
+summ(model_whole, confint = TRUE, digits = 3) #In many cases, you’ll learn more by looking at confidence intervals than p-values. You can request them from summ. default is 95% CIs
+
+summ(model_whole, confint = TRUE, pvals = FALSE) #DROP the p values all together
+
+# THE GRAPH
+plot_summs(model_whole)
+plot_summs(model_whole, inner_ci_level = .9)
+plot_summs(model_whole, robust = TRUE)
+
+# plot coefficient uncertainty as normal distributions
+plot_summs(model_whole, plot.distributions = TRUE, inner_ci_level = .9)
+
+# table output for Word and RMarkdown documents
+## error is in the parenthesis
+export_summs(model_whole, scale = TRUE)
+
+# confidence intervals instead of standard errors
+export_summs(model_whole, scale = TRUE,
+             error_format = "[{conf.low}, {conf.high}]")
+```
+
+## forest plot, whole
+#### renaming variables in the forest plot
+
+```{r}
+forest_whole <- plot_summs(
+        point.size = 3,
+        fontsize=8,
+        colors = "darkslateblue",
+        model_whole, coefs = c("Household Education Partial College and Below
+                                 College and Beyond (ref)" = "refEDpartial college and below", 
+                          
+                                 "Age: Middle-Aged
+                                 Child (ref)" = "agemiddle-aged",
+                          
+                                 "Age: Older Adult
+                                 Child (ref)" = "ageolder adult",
+                          
+                                 "Age: Young Adult
+                                 Child (ref)" = "ageyoung adult",
+                          
+                                 "Gender: Male
+                                 Gender: Female (ref)" = "gendermale",
+                          
+                                 "Ethnicity: Non-Hispanic Black
+                                 Mexican American (ref)" = "ethnicityNon-Hispanic Black",
+                          
+                                 "Ethnicity: Non-Hispanic White
+                                 Mexican American (ref)" = "ethnicityNon-Hispanic White",
+                          
+                                 "Ethnicity: Other Hispanic
+                                 Mexican American (ref)" = "ethnicityOther Hispanic",
+                          
+                                 "Ethnicity: Other or Multi
+                                 Mexican American (ref)" = "ethnicityOther or Multi",
+                          
+                                 "Family Income to Poverty Ratio: 2x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 2x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 3x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 3x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 4x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 4x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 5x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 5x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: more than 5x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income more than 5x poverty threshold",
+                          
+                                 "Citizenship Status: Not U.S. Citizen
+                                 U.S. Citizen by birth or naturalization (ref)" = "citizenshipnot U,S, citizen"),
+        
+                          scale = TRUE, robust = TRUE)
+
+forest_whole
+```
+
+
+
+## Suite of Models
+```{r}
+model_whole <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship, design=nhc, na.action = na.omit)
+
+model_adult <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship+adultED, design=subset_adult, na.action = na.omit)
+
+model_child <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship, design=subset_child, na.action = na.omit)
+
+```
+
+
+
+
+
+## CHILD with CONTINUOUS age
+### SUBSET: CHILDREN
+
+```{r}
+subset_child <- subset(nhc, RIDAGEYR < 19)
+
+model_child <- svyglm(log(monoEthyl)~refED+RIDAGEYR+gender+ethnicity+fpl+citizenship, design=subset_child, na.action = na.omit)
+
+summ(model_child)
+
+summ(model_child, robust = "HC1") #robust standard errors 
+
+summ(model_child, confint = TRUE, digits = 3) #In many cases, you’ll learn more by looking at confidence intervals than p-values. You can request them from summ. default is 95% CIs
+
+summ(model_child, confint = TRUE, pvals = FALSE) #DROP the p values all together
+
+# THE GRAPH
+plot_summs(model_child)
+plot_summs(model_child, inner_ci_level = .9)
+plot_summs(model_child, robust = TRUE)
+
+# plot coefficient uncertainty as normal distributions
+plot_summs(model_child, plot.distributions = TRUE, inner_ci_level = .9)
+
+# table output for Word and RMarkdown documents
+## error is in the parenthesis
+export_summs(model_child, scale = TRUE)
+
+# confidence intervals instead of standard errors
+export_summs(model_child, scale = TRUE,
+             error_format = "[{conf.low}, {conf.high}]")
+
+
+
+
+
+
+### check AIC 
+subset_child <- subset(nhc, RIDAGEYR < 19)
+
+model_child <- svyglm(log(monoEthyl)~refED+RIDAGEYR+gender+ethnicity+fpl+citizenship, design=subset_child, na.action = na.omit)
+
+ols_child <- svyglm(log(monoEthyl)~refED+RIDAGEYR+gender+ethnicity+fpl+citizenship, design=subset_child, na.action = na.omit)
+ols_child 
+# this gives an AIC of 24,430
+
+```
+
+## forest plot, children
+#### renaming variables in the forest plot
+
+```{r}
+model_child <- svyglm(log(monoEthyl)~refED+RIDAGEYR+gender+ethnicity+fpl+citizenship, design=subset_child, na.action = na.omit)
+
+forest_child <- plot_summs(
+        point.size = 3,
+        fontsize=8,
+        colors = "darkslateblue",
+        model_child, coefs = c("Household Education Partial College and Below
+                                 College and Beyond (ref)" = "refEDpartial college and below", 
+                          
+                                 "Age in years (continuous)
+                                 (mean-centered and scaled by 1 SD)" = "RIDAGEYR",
+                               
+                                 "Gender: Male
+                                 Gender: Female (ref)" = "gendermale",
+                          
+                                 "Ethnicity: Non-Hispanic Black
+                                 Mexican American (ref)" = "ethnicityNon-Hispanic Black",
+                          
+                                 "Ethnicity: Non-Hispanic White
+                                 Mexican American (ref)" = "ethnicityNon-Hispanic White",
+                          
+                                 "Ethnicity: Other Hispanic
+                                 Mexican American (ref)" = "ethnicityOther Hispanic",
+                          
+                                 "Ethnicity: Other or Multi
+                                 Mexican American (ref)" = "ethnicityOther or Multi",
+                          
+                                 "Family Income to Poverty Ratio: 2x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 2x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 3x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 3x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 4x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 4x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 5x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 5x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: more than 5x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income more than 5x poverty threshold",
+                          
+                                 "Citizenship Status: Not U.S. Citizen
+                                 U.S. Citizen by birth or naturalization (ref)" = "citizenshipnot U,S, citizen"),
+        
+                          scale = TRUE, robust = TRUE)
+
+forest_child
+```
+
+
