@@ -76,11 +76,11 @@ summ(model_adult, confint = TRUE, pvals = FALSE) #DROP the p values all together
 
 # THE GRAPH
 plot_summs(model_adult)
-plot_summs(model_adult, inner_ci_level = .9)
+plot_summs(model_adult, inner_ci_level = .95)
 plot_summs(model_adult, robust = TRUE)
 
 # plot coefficient uncertainty as normal distributions
-plot_summs(model_adult, plot.distributions = TRUE, inner_ci_level = .9)
+plot_summs(model_adult, plot.distributions = TRUE, inner_ci_level = .95)
 
 # table output for Word and RMarkdown documents
 ## error is in the parenthesis
@@ -203,11 +203,11 @@ summ(model_child, confint = TRUE, pvals = FALSE) #DROP the p values all together
 
 # THE GRAPH
 plot_summs(model_child)
-plot_summs(model_child, inner_ci_level = .9)
+plot_summs(model_child, inner_ci_level = .95)
 plot_summs(model_child, robust = TRUE)
 
 # plot coefficient uncertainty as normal distributions
-plot_summs(model_child, plot.distributions = TRUE, inner_ci_level = .9)
+plot_summs(model_child, plot.distributions = TRUE, inner_ci_level = .95)
 
 # table output for Word and RMarkdown documents
 ## error is in the parenthesis
@@ -307,11 +307,11 @@ summ(model_whole, confint = TRUE, pvals = FALSE) #DROP the p values all together
 
 # THE GRAPH
 plot_summs(model_whole)
-plot_summs(model_whole, inner_ci_level = .9)
+plot_summs(model_whole, inner_ci_level = .95)
 plot_summs(model_whole, robust = TRUE)
 
 # plot coefficient uncertainty as normal distributions
-plot_summs(model_whole, plot.distributions = TRUE, inner_ci_level = .9)
+plot_summs(model_whole, plot.distributions = TRUE, inner_ci_level = .95)
 
 # table output for Word and RMarkdown documents
 ## error is in the parenthesis
@@ -388,7 +388,8 @@ model_whole <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship,
 
 model_adult <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship+adultED, design=subset_adult, na.action = na.omit)
 
-model_child <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship, design=subset_child, na.action = na.omit)
+model_child <- svyglm(log(monoEthyl)~refED+gender+ethnicity+fpl+citizenship, design=subset_child, na.action = na.omit)
+# cannot have "age" in child model because they are all "child" category
 
 ```
 
@@ -414,11 +415,11 @@ summ(model_child, confint = TRUE, pvals = FALSE) #DROP the p values all together
 
 # THE GRAPH
 plot_summs(model_child)
-plot_summs(model_child, inner_ci_level = .9)
+plot_summs(model_child, inner_ci_level = .95)
 plot_summs(model_child, robust = TRUE)
 
 # plot coefficient uncertainty as normal distributions
-plot_summs(model_child, plot.distributions = TRUE, inner_ci_level = .9)
+plot_summs(model_child, plot.distributions = TRUE, inner_ci_level = .95)
 
 # table output for Word and RMarkdown documents
 ## error is in the parenthesis
