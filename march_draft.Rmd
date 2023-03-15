@@ -61,10 +61,11 @@ summary(nhc)
 
 ### SUBSET: ADULTS
 #### plus, add in "adultED"
+### take out "refED"
 ```{r}
 subset_adult <- subset(nhc, RIDAGEYR >= 19)
 
-model_adult <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship+adultED, design=subset_adult, na.action = na.omit)
+model_adult <- svyglm(log(monoEthyl)~age+gender+ethnicity+fpl+citizenship+adultED, design=subset_adult, na.action = na.omit)
 
 summ(model_adult)
 
@@ -94,14 +95,15 @@ export_summs(model_adult, scale = TRUE,
 ### check AIC 
 subset_adult <- subset(nhc, RIDAGEYR >= 19)
 
-model_adult <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship+adultED, design=subset_adult, na.action = na.omit)
+model_adult <- svyglm(log(monoEthyl)~age+gender+ethnicity+fpl+citizenship+adultED, design=subset_adult, na.action = na.omit)
 
-ols_adult <- (svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship+adultED, design=subset_adult, na.action = na.omit))
+ols_adult <- (svyglm(log(monoEthyl)~age+gender+ethnicity+fpl+citizenship+adultED, design=subset_adult, na.action = na.omit))
 ols_adult
-# this gives an AIC of 49,030
+# this gives an AIC of 50,030
+# (if refED was included, this gives an AIC of 49,030)
 
 # comparing to without adultED
-model_adult_noED <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship, design=subset_adult, na.action = na.omit)
+model_adult_noED <- svyglm(log(monoEthyl)~age+gender+ethnicity+fpl+citizenship, design=subset_adult, na.action = na.omit)
 
 ols_adult_noED <- (svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship, design=subset_adult, na.action = na.omit))
 
@@ -115,16 +117,13 @@ ols_adult_noED
 #### renaming variables in the forest plot
 
 ```{r}
-model_adult <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship+adultED, design=subset_adult, na.action = na.omit)
+model_adult <- svyglm(log(monoEthyl)~age+gender+ethnicity+fpl+citizenship+adultED, design=subset_adult, na.action = na.omit)
 
 forest_adult <- plot_summs(
         point.size = 3,
         fontsize=8,
         colors = "darkslateblue",
-        model_adult, coefs = c("Household Education Partial College and Below
-                                 College and Beyond (ref)" = "refEDpartial college and below", 
-                          
-                                 "Age: Older Adult
+        model_adult, coefs = c("Age: Older Adult
                                  Middle-Aged (ref)" = "ageolder adult",
                           
                                  "Age: Young Adult
@@ -499,4 +498,75 @@ forest_child <- plot_summs(
 forest_child
 ```
 
+## Descriptive Statistics table info:
+```{r}
+summary(as.factor(fullNHANES_recat$year))
+```
+
+## Chi Squared Test
+
+very small p value >> reject the idea that they are equal
+
+```{r}
+svychisq(~ethnicity+gender, nhc, statistic="adjWald")
+
+```
+
+
+## Independent-samples t-test:
+
+```{r}
+svyttest(log(monoEthyl)~gender, nhc)
+```
+
+
+## ANOVA
+This is an example of a Kruskal Wallis test, which is the non-parametric analog of a one-way ANOVA.
+
+Null Hypothesis (H0): All ranks are equal (no difference in medians) 
+Alternative Hypothesis (HA): At least two ranks differ (at least one difference in group medians)
+
+Tests whether samples are originated from the same distribution.
+The ANOVA (and t-test) is explicitly a test of equality of means of values. The Kruskal-Wallis (and Mann-Whitney) can be seen technically as a comparison of the mean ranks
+
+### the "Chisq" is actually the H Statistic
+
+```{r}
+kwtest <- svyranktest(monoEthyl~adultED, design = nhc, na = TRUE, test=("KruskalWallis"))
+kwtest
+```
+
+
+
+## add year into the equation!
+Holding all other variables constant, increasing years (with time) phthalate level goes up or down
+If use dummy variable, have to leave one out (ie 2001)
+
+```{r}
+model_whole_x <- svyglm(log(monoEthyl)~refED+age+gender+ethnicity+fpl+citizenship+year, design=nhc, na.action = na.omit)
+
+summ(model_whole_x)
+
+summ(model_whole_x, robust = "HC1") #robust standard errors 
+
+summ(model_whole_x, confint = TRUE, digits = 3) #In many cases, you’ll learn more by looking at confidence intervals than p-values. You can request them from summ. default is 95% CIs
+
+summ(model_whole_x, confint = TRUE, pvals = FALSE) #DROP the p values all together
+
+# THE GRAPH
+plot_summs(model_whole_x)
+plot_summs(model_whole_x, inner_ci_level = .95)
+plot_summs(model_whole_x, robust = TRUE)
+
+# plot coefficient uncertainty as normal distributions
+plot_summs(model_whole_x, plot.distributions = TRUE, inner_ci_level = .95)
+
+# table output for Word and RMarkdown documents
+## error is in the parenthesis
+export_summs(model_whole_x, scale = TRUE)
+
+# confidence intervals instead of standard errors
+export_summs(model_whole_x, scale = TRUE,
+             error_format = "[{conf.low}, {conf.high}]")
+```
 
