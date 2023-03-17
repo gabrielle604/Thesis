@@ -65,6 +65,16 @@ summary(nhc)
 ```{r}
 subset_adult <- subset(nhc, RIDAGEYR >= 19)
 
+
+# create an adult NHANES file
+names(fullNHANES_recat)
+
+fullNHANES_recat %>% filter(RIDAGEYR>=19) -> only_adults
+
+# what is missing?
+vis_miss(only_adults, sort_miss = TRUE)
+
+### 
 model_adult <- svyglm(log(monoEthyl)~age+gender+ethnicity+fpl+citizenship+adultED, design=subset_adult, na.action = na.omit)
 
 summ(model_adult)
@@ -189,6 +199,13 @@ forest_adult
 
 ```{r}
 subset_child <- subset(nhc, RIDAGEYR < 19)
+
+# create a child NHANES file
+names(fullNHANES_recat)
+
+fullNHANES_recat %>% filter(RIDAGEYR<19) -> only_child
+vis_miss(only_child, sort_miss = TRUE)
+
 
 model_child <- svyglm(log(monoEthyl)~refED+gender+ethnicity+fpl+citizenship, design=subset_child, na.action = na.omit)
 
@@ -500,7 +517,24 @@ forest_child
 
 ## Descriptive Statistics table info:
 ```{r}
-summary(as.factor(fullNHANES_recat$year))
+summary(as.factor(fullNHANES_recat$gender))
+
+svysd(~RIDAGEYR, design = subset_child, na = TRUE)
+
+svymean(~RIDAGEYR, design = subset_adult, na = TRUE)
+
+svymean(~INDFMPIR, nhc, na = TRUE)
+
+# descriptive statistics with categorical variables (replace ~fpl with each variable individually)
+## children
+table1 <- svytable(~refED, design = subset_child)
+
+prop.table(table1)
+
+# adults
+table2 <- svytable(~adultED, design = subset_adult)
+
+prop.table(table2)
 ```
 
 ## Chi Squared Test
