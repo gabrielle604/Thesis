@@ -521,6 +521,8 @@ summary(as.factor(fullNHANES_recat$gender))
 
 svysd(~RIDAGEYR, design = subset_child, na = TRUE)
 
+svymean(~RIDAGEYR, design = subset_child, na = TRUE)
+
 svymean(~RIDAGEYR, design = subset_adult, na = TRUE)
 
 svymean(~INDFMPIR, nhc, na = TRUE)
@@ -532,7 +534,7 @@ table1 <- svytable(~refED, design = subset_child)
 prop.table(table1)
 
 # adults
-table2 <- svytable(~adultED, design = subset_adult)
+table2 <- svytable(~age, design = subset_adult)
 
 prop.table(table2)
 ```
