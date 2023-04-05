@@ -541,7 +541,7 @@ prop.table(table2)
 
 ## Chi Squared Test
 
-very small p value >> reject the idea that they are equal
+very small p value ->> reject the idea that they are equal
 
 ```{r}
 svychisq(~ethnicity+gender, nhc, statistic="adjWald")
@@ -604,5 +604,112 @@ export_summs(model_whole_x, scale = TRUE)
 # confidence intervals instead of standard errors
 export_summs(model_whole_x, scale = TRUE,
              error_format = "[{conf.low}, {conf.high}]")
+```
+
+
+
+
+
+
+## adding in "year" to child subset model
+```{r}
+subset_child <- subset(nhc, RIDAGEYR < 19)
+
+model_child_x <- svyglm(log(monoEthyl)~refED+RIDAGEYR+gender+ethnicity+fpl+citizenship+year, design=subset_child, na.action = na.omit)
+
+summ(model_child_x)
+
+summ(model_child_x, robust = "HC1") #robust standard errors 
+
+summ(model_child_x, confint = TRUE, digits = 3) #In many cases, you’ll learn more by looking at confidence intervals than p-values. You can request them from summ. default is 95% CIs
+
+summ(model_child_x, confint = TRUE, pvals = FALSE) #DROP the p values all together
+
+# THE GRAPH
+plot_summs(model_child_x)
+plot_summs(model_child_x, inner_ci_level = .95)
+plot_summs(model_child_x, robust = TRUE)
+
+# plot coefficient uncertainty as normal distributions
+plot_summs(model_child_x, plot.distributions = TRUE, inner_ci_level = .95)
+
+# table output for Word and RMarkdown documents
+## error is in the parenthesis
+export_summs(model_child_x, scale = TRUE)
+
+# confidence intervals instead of standard errors
+export_summs(model_child_x, scale = TRUE,
+             error_format = "[{conf.low}, {conf.high}]")
+
+
+
+
+
+
+### check AIC 
+subset_child <- subset(nhc, RIDAGEYR < 19)
+
+model_child_x <- svyglm(log(monoEthyl)~refED+RIDAGEYR+gender+ethnicity+fpl+citizenship+year, design=subset_child, na.action = na.omit)
+
+ols_child_x <- svyglm(log(monoEthyl)~refED+RIDAGEYR+gender+ethnicity+fpl+citizenship+year, design=subset_child, na.action = na.omit)
+ols_child_x 
+# this gives an AIC of 23,580 !!! better AIC than without the variable "year" included
+```
+
+
+
+## renaming the forest plot for children + continuous age + year of survey
+```{r}
+model_child_x <- svyglm(log(monoEthyl)~refED+RIDAGEYR+gender+ethnicity+fpl+citizenship+year, design=subset_child, na.action = na.omit)
+
+forest_child_x <- plot_summs(
+        point.size = 3,
+        fontsize=8,
+        colors = "darkslateblue",
+        model_child_x, coefs = c("Household Education Partial College and Below
+                                 College and Beyond (ref)" = "refEDpartial college and below", 
+                          
+                                 "Age in years (continuous)
+                                 (mean-centered and scaled by 1 SD)" = "RIDAGEYR",
+                               
+                                 "Gender: Male
+                                 Gender: Female (ref)" = "gendermale",
+                          
+                                 "Ethnicity: Non-Hispanic Black
+                                 Mexican American (ref)" = "ethnicityNon-Hispanic Black",
+                          
+                                 "Ethnicity: Non-Hispanic White
+                                 Mexican American (ref)" = "ethnicityNon-Hispanic White",
+                          
+                                 "Ethnicity: Other Hispanic
+                                 Mexican American (ref)" = "ethnicityOther Hispanic",
+                          
+                                 "Ethnicity: Other or Multi
+                                 Mexican American (ref)" = "ethnicityOther or Multi",
+                          
+                                 "Family Income to Poverty Ratio: 2x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 2x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 3x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 3x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 4x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 4x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: 5x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income 5x poverty threshold",
+                          
+                                 "Family Income to Poverty Ratio: more than 5x Poverty threshold
+                                 At poverty threshold (ref)" = "fplfamily income more than 5x poverty threshold",
+                          
+                                 "Citizenship Status: Not U.S. Citizen
+                                 U.S. Citizen by birth or naturalization (ref)" = "citizenshipnot U,S, citizen",
+        
+                                 "Year of Survey (continuous)
+                                 (describe here)" = "year"),
+        
+                          scale = TRUE, robust = TRUE)
+
+forest_child_x
 ```
 
