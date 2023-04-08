@@ -309,7 +309,7 @@ export_summs(model_child, scale = TRUE,
 forest_child <- plot_summs(
         point.size = 3,
         fontsize=8,
-        colors = "darkslateblue",
+        colors = "skyblue3",
         model_child, coefs = c("Household Education Partial College and Below
                                  College and Beyond (ref)" = "refEDpartial college and below", 
                           
@@ -453,6 +453,25 @@ NOTE: the "Chisq" is actually the H Statistic
 ```{r}
 kwtest <- svyranktest(monoEthyl~adultED, design = nhc, na = TRUE, test=("KruskalWallis"))
 kwtest
+```
+
+
+
+
+
+
+
+
+
+
+## Distribution of Mono-ethyl Phthalate
+```{r}
+## raw
+hist(NHANES$monoEthyl, col = 'skyblue3', border = "white", xlab = 'Mono-ethyl Phthalate (ng/mL)', ylab = 'Frequency', main = 'Distribution of Mono-ethyl Phthalate')
+
+## logged
+hist(log(NHANES$URXMEP), col = 'skyblue3', border = "white", xlab = 'Mono-ethyl Phthalate (ng/mL)', ylab = 'Frequency', main = 'Distribution of Mono-ethyl Phthalate')
+
 ```
 
 
