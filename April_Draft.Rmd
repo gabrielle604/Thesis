@@ -469,8 +469,20 @@ kwtest
 ## raw
 hist(NHANES$monoEthyl, col = 'skyblue3', border = "white", xlab = 'Mono-ethyl Phthalate (ng/mL)', ylab = 'Frequency', main = 'Distribution of Mono-ethyl Phthalate')
 
+## raw, just children
+hist(only_child$monoEthyl, col = 'skyblue3', border = "white", breaks = 50, xlab = 'Mono-ethyl Phthalate (ng/mL)', ylab = 'Frequency', main = 'Distribution of Mono-ethyl Phthalate')
+
+## dotchart
+dotchart(only_child$monoEthyl, col = 'skyblue3', col.line = "transparent", xlab = 'Mono-ethyl Phthalate (ng/mL)', ylab = 'Frequency', main = 'Distribution of Mono-ethyl Phthalate')
+
+ggplot(only_child,aes(monoEthyl))+geom_dotplot(binwidth=100)+theme_minimal()
+
+
 ## logged
 hist(log(NHANES$URXMEP), col = 'skyblue3', border = "white", xlab = 'Mono-ethyl Phthalate (ng/mL)', ylab = 'Frequency', main = 'Distribution of Mono-ethyl Phthalate')
+
+## logged, just children
+hist(log(only_child$URXMEP), col = 'skyblue3', border = "white", xlab = 'Mono-ethyl Phthalate (ng/mL)', ylab = 'Frequency', main = 'Distribution of Mono-ethyl Phthalate')
 
 ```
 
