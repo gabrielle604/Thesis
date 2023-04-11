@@ -30,6 +30,9 @@ library(haven) # for reading SAS XPT file from NHANES website
 library(survey) # for using survey weights
 library(dplyr) # for data wrangling
 library(forcats)
+library(skimr)
+library(stringr)
+library(gtsummary)
 
 library("remotes")
 library("svrepmisc")
@@ -384,6 +387,8 @@ summary(as.factor(NHANES$gender))
 
 svysd(~RIDAGEYR, design = subset_child, na = TRUE)
 
+svymean(~log(URXMEP), design = subset_child, na = TRUE)
+
 svymean(~RIDAGEYR, design = subset_child, na = TRUE)
 
 svymean(~RIDAGEYR, design = subset_adult, na = TRUE)
@@ -392,7 +397,7 @@ svymean(~INDFMPIR, nhc, na = TRUE)
 
 # descriptive statistics with categorical variables (replace ~fpl with each variable individually)
 ## children
-table1 <- svytable(~refED, design = subset_child)
+table1 <- svytable(~fpl, design = subset_child)
 
 prop.table(table1)
 
@@ -487,5 +492,43 @@ hist(log(only_child$URXMEP), col = 'skyblue3', border = "white", xlab = 'Mono-et
 ```
 
 
+
+
+
+
+
+
+
+
+## Descriptive statistics table
+```{r}
+skim(NHANES)
+
+only_child$ageCont <- only_child$RIDAGEYR
+only_child$LOGmonoEthyl <- log(only_child$URXMEP)
+
+
+only_child %>% tabyl(age, gender)
+
+only_child %>% 
+  select(RIDAGEYR,URXMEP) %>%  # keep only columns of interest
+  tbl_summary(                                     # create summary table
+    type = all_continuous() ~ "continuous2",       # indicate that you want to print multiple statistics 
+    statistic = all_continuous() ~ c(
+      "{mean} ({sd})",                             # line 1: mean and SD
+      "{median} ({p25}, {p75})",                   # line 2: median and IQR
+      "{min}, {max}")                              # line 3: min and max
+    )
+
+only_child %>% 
+  select(age, ageCont, gender, ethnicity, fpl, citizenship, refED, LOGmonoEthyl) %>%  # keep only columns of interest
+  tbl_summary(                                     # create summary table
+    type = all_continuous() ~ "continuous2",       # indicate that you want to print multiple statistics 
+    statistic = all_continuous() ~ c(
+      "{mean} ({sd})",                             # line 1: mean and SD
+      "{median} ({p25}, {p75})",                   # line 2: median and IQR
+      "{min}, {max}")                              # line 3: min and max
+    )
+```
 
 
