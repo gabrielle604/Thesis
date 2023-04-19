@@ -688,6 +688,13 @@ model.matrix(~0+., data=only_adults_edu) %>%
   ggcorrplot(show.diag=FALSE, type="lower", lab=TRUE, lab_size=2)
 ```
 
+```{r}
+only_adults_edu <- NHANES %>% select(DMDHREDU,DMDEDUC2)
+
+model.matrix(~0+., data=only_adults_edu) %>% 
+  cor(use="pairwise.complete.obs") %>% 
+  ggcorrplot(show.diag=FALSE, type="lower", lab=TRUE, lab_size=2)
+```
 
 
 
