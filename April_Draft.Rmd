@@ -78,6 +78,20 @@ summary(nhc)
 
 
 
+```{r}
+svyboxplot(~log(monoEthyl)~1, nhc, all.outliers=TRUE)
+
+svyboxplot(~log(monoEthyl)~factor(gender), nhc, all.outliers=TRUE, xlab = "Gender", main = "Bivariate Analysis of (Logged) Urinary Mono-ethyl Phthalate and Gender")
+
+svyboxplot(~log(monoEthyl)~factor(gender), subset_child, xlab = "Gender", main = "Bivariate Analysis of (Logged) Urinary Mono-ethyl Phthalate and Gender")
+
+svyboxplot(~log(monoEthyl)~factor(ethnicity), subset_child, xlab = "Race/Ethnicity", main = "Bivariate Analysis of (Logged) Urinary Mono-ethyl Phthalate and Race/Ethnicity")
+
+#### ^^^ why do all of these look the same?
+
+```
+
+
 ## Boxplots, bivariate analyses
 ```{r}
 # change the noNAs dataset with each boxplot I create:
@@ -97,6 +111,21 @@ ggtitle("Participant Citizenship Status and Logged Phthalate Level")
 
 
 box_citizenship
+
+
+noNAs = NHANES %>% filter(!is.na(refED)) %>% filter(!is.na(monoEthyl))
+
+box_education <- ggplot(data = noNAs, design=nhc,
+                      aes(x=log(monoEthyl), y=refED, fill=refED)) +
+  scale_fill_brewer(palette="PuBuGn") +
+  geom_boxplot() +
+  theme(text = element_text(size=12)) +
+  xlab("(logged) Mono-Ethyl Phthalate Level (ng/mL)") +
+  ylab("Household reference person education level") +
+ggtitle("Household reference person education level and Logged Phthalate Level")
+
+
+box_education
 ```
 We can make barcharts. In the example below, we also preview some syntax used for subpopulation analysis.
 ```{r}
@@ -524,6 +553,14 @@ NOTE: the "Chisq" is actually the H Statistic
 kwtest <- svyranktest(monoEthyl~adultED, design = nhc, na = TRUE, test=("KruskalWallis"))
 kwtest
 ```
+```{r}
+# ??? use regTermTest?
+
+# model_child <- svyglm(log(monoEthyl)~refED+RIDAGEYR+gender+ethnicity+fpl+citizenship+year, design=subset_child, na.action = na.omit)
+
+
+# regTermTest(subset_child,~refED)
+```
 
 
 
@@ -560,6 +597,23 @@ plot(dens1)
 
 ## Scatterplot with the sampling weights corresponding to the bubble size.
 svyplot(~log(monoEthyl)+RIDAGEYR, nhc, style="bubble")
+
+## Quantiles
+# all, raw
+svyquantile(~URXMEP, design = nhc, na = TRUE, c(.1,.5,.9),ci=TRUE)
+#all, logged monoethyl
+svyquantile(~(log(monoEthyl)), design = nhc, na = TRUE, c(.1,.5,.9),ci=TRUE)
+
+#children, raw
+svyquantile(~URXMEP, design = subset_child, na = TRUE, c(.1,.5,.9),ci=TRUE)
+#children, logged monoethyl
+svyquantile(~(log(monoEthyl)), design = subset_child, na = TRUE, c(.1,.5,.9),ci=TRUE)
+
+#adults, raw
+svyquantile(~URXMEP, design = subset_adult, na = TRUE, c(.1,.5,.9),ci=TRUE)
+#adult, logged monoethyl
+svyquantile(~(log(monoEthyl)), design = subset_adult, na = TRUE, c(.1,.5,.9),ci=TRUE)
+
 ```
 
 
@@ -696,6 +750,18 @@ model.matrix(~0+., data=only_adults_edu) %>%
   ggcorrplot(show.diag=FALSE, type="lower", lab=TRUE, lab_size=2)
 ```
 
+## Interactions ??? [possibly to work on later, but prioritize other revisions]
+interact1: race/ethnicity and HHH education [children]
+interact2: race/ethnicity and participant education [adults]
+interact3: gender and ?
+
+```{r}
+# model_child <- svyglm(log(monoEthyl)~refED+RIDAGEYR+gender+ethnicity+fpl+citizenship+year, design=subset_child, na.action = na.omit)
+
+# model_adult <- svyglm(log(monoEthyl)~age+gender+ethnicity+fpl+citizenship+adultED+year, design=subset_adult, na.action = na.omit)
+
+## try the interactions
+```
 
 
 

@@ -247,7 +247,8 @@ fullNHANES$year = factor(ifelse(fullNHANES$year ==2001, "2001",
                                 ifelse(fullNHANES$year ==2009, "2009",
                                 ifelse(fullNHANES$year ==2011, "2011",
                                 ifelse(fullNHANES$year ==2013, "2013",
-                                ifelse(fullNHANES$year ==2015, "2015", NA)))))))))
+                                ifelse(fullNHANES$year ==2015, "2015", NA)))))))),
+                          levels=c("2001","2003", "2005", "2007", "2009","2011", "2013", "2015"))
 summary(fullNHANES$year)
 ```
 
