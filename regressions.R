@@ -157,7 +157,7 @@ summ(model_child)
 summ(model_child, robust = "HC1") #robust standard errors 
 
 
-summ(model_child, confint = TRUE, pvals = FALSE) #DROP the p values all together
+summ(model_child, confint = TRUE, pvals = TRUE) #DROP the p values all together
 
 # THE GRAPH
 plot_summs(model_child)

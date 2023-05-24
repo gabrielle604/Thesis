@@ -32,6 +32,9 @@ summary(lm(log(monoEthyl)~age+gender+ethnicity+fpl+citizenship+adultED+year, des
 summary(lm(log(monoEthyl)~age+gender+ethnicity+fpl+citizenship+adultED+refED+year, design=subset_adult, data = only_adults))
 # coefficients for adultED go down when refED added into the model
 
+
+
+
 ## Only looking at correlation between adult participant education and household head education
 
 # If you want to have a genuine correlation plot for factors or mixed-type, you can also use model.matrix to one-hot encode all non-numeric variables. This is quite different than calculating Cramér's V as it will consider your factor as separate variables, as many regression models do.
