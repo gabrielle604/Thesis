@@ -85,21 +85,19 @@ svyboxplot(~log(monoEthyl)~factor(gender), nhc, all.outliers=TRUE, xlab = "Gende
 
 svyboxplot(~log(monoEthyl)~factor(gender), subset_child, xlab = "Gender", main = "Bivariate Analysis of (Logged) Urinary Mono-ethyl Phthalate and Gender")
 
-svyboxplot(~log(monoEthyl)~factor(ethnicity), subset_child, xlab = "Race/Ethnicity", main = "Bivariate Analysis of (Logged) Urinary Mono-ethyl Phthalate and Race/Ethnicity")
-
-#### ^^^ why do all of these look the same?
+svyboxplot(~log(monoEthyl)~factor(gender), subset_adult, xlab = "Gender", main = "Bivariate Analysis of (Logged) Urinary Mono-ethyl Phthalate and Gender")
 
 ```
 
 
-## Boxplots, bivariate analyses
+## Boxplots, bivariate analyses (combined children and adults)
 ```{r}
 # change the noNAs dataset with each boxplot I create:
-## one for: refED age gender ethnicity fpl citizenship
+## one for each variable
 
+## citizenship
 noNAs = NHANES %>% filter(!is.na(citizenship)) %>% filter(!is.na(monoEthyl))
                                                                                                             
-
 box_citizenship <- ggplot(data = noNAs, design=nhc,
                       aes(x=log(monoEthyl), y=citizenship, fill=citizenship)) +
   scale_fill_brewer(palette="PuBuGn") +
@@ -109,10 +107,9 @@ box_citizenship <- ggplot(data = noNAs, design=nhc,
   ylab("Participant Citizenship Status") +
 ggtitle("Participant Citizenship Status and Logged Phthalate Level")
 
-
 box_citizenship
 
-
+## ref ED
 noNAs = NHANES %>% filter(!is.na(refED)) %>% filter(!is.na(monoEthyl))
 
 box_education <- ggplot(data = noNAs, design=nhc,
@@ -127,6 +124,222 @@ ggtitle("Household reference person education level and Logged Phthalate Level")
 
 box_education
 ```
+## Bivariate for children:
+```{r}
+# change the noNAs dataset with each boxplot I create:
+
+## AGE
+noNAs = only_child %>% filter(!is.na(RIDAGEYR)) %>% filter(!is.na(monoEthyl))
+
+box_age <- ggplot(data = noNAs, design=nhc,
+                      aes(x=log(monoEthyl), y=(RIDAGEYR))) +
+  scale_fill_brewer(palette="PuBuGn") +
+  geom_point() +
+  geom_smooth() +
+  theme(text = element_text(size=12)) +
+  xlab("(logged) Mono-Ethyl Phthalate Level (ng/mL)") +
+  ylab("Age of Participant") +
+ggtitle("Age of participant and Logged Phthalate Level")
+
+box_age
+
+## EDUCATION
+noNAs = only_child %>% filter(!is.na(refED)) %>% filter(!is.na(refED))
+                                                                                                         
+box_refED <- ggplot(data = noNAs, design=nhc,
+                      aes(x=log(monoEthyl), y=refED, fill=refED)) +
+  scale_fill_brewer(palette="PuBuGn") +
+  geom_boxplot() +
+  theme(text = element_text(size=12)) +
+  xlab("(logged) Mono-Ethyl Phthalate Level (ng/mL)") +
+  ylab("Household Reference Person's Education Level") +
+ggtitle("Household Reference Person's Education Level and Logged Phthalate Level")
+
+
+box_refED
+
+## GENDER
+
+noNAs = only_child %>% filter(!is.na(gender)) %>% filter(!is.na(gender))
+                                                                                                         
+box_gender <- ggplot(data = noNAs, design=nhc,
+                      aes(x=log(monoEthyl), y=gender, fill=gender)) +
+  scale_fill_brewer(palette="PuBuGn") +
+  geom_boxplot() +
+  theme(text = element_text(size=12)) +
+  xlab("(logged) Mono-Ethyl Phthalate Level (ng/mL)") +
+  ylab("Participant Gender") +
+ggtitle("Participant Gender and Logged Phthalate Level")
+
+box_gender
+
+## ETHNICITY
+noNAs = only_child %>% filter(!is.na(ethnicity)) %>% filter(!is.na(ethnicity))
+                                                                                                         
+box_eth <- ggplot(data = noNAs, design=nhc,
+                      aes(x=log(monoEthyl), y=ethnicity, fill=ethnicity)) +
+  scale_fill_brewer(palette="PuBuGn") +
+  geom_boxplot() +
+  theme(text = element_text(size=12)) +
+  xlab("(logged) Mono-Ethyl Phthalate Level (ng/mL)") +
+  ylab("Participant Race/Ethnicity") +
+ggtitle("Participant Race/Ethnicity and Logged Phthalate Level")
+
+
+box_eth
+
+## FPL
+noNAs = only_child %>% filter(!is.na(fpl)) %>% filter(!is.na(fpl))
+                                                                                                         
+box_fpl <- ggplot(data = noNAs, design=nhc,
+                      aes(x=log(monoEthyl), y=fpl, fill=fpl)) +
+  scale_fill_brewer(palette="PuBuGn") +
+  geom_boxplot() +
+  theme(text = element_text(size=12)) +
+  xlab("(logged) Mono-Ethyl Phthalate Level (ng/mL)") +
+  ylab("Participant Family Income to Poverty Ratio") +
+ggtitle("Participant Family Income to Poverty Ratio and Logged Phthalate Level")
+
+box_fpl
+
+## CITIZENSHIP
+noNAs = only_child %>% filter(!is.na(citizenship)) %>% filter(!is.na(citizenship))
+                                                                                                         
+box_cit <- ggplot(data = noNAs, design=nhc,
+                      aes(x=log(monoEthyl), y=citizenship, fill=citizenship)) +
+  scale_fill_brewer(palette="PuBuGn") +
+  geom_boxplot() +
+  theme(text = element_text(size=12)) +
+  xlab("(logged) Mono-Ethyl Phthalate Level (ng/mL)") +
+  ylab("Participant Citizenship") +
+ggtitle("Participant Citizenship and Logged Phthalate Level")
+
+box_cit
+
+## YEAR
+noNAs = only_child %>% filter(!is.na(year)) %>% filter(!is.na(year))
+                                                                                                         
+box_year <- ggplot(data = noNAs, design=nhc,
+                      aes(x=log(monoEthyl), y=year, fill=year)) +
+  scale_fill_brewer(palette="PuBuGn") +
+  geom_boxplot() +
+  theme(text = element_text(size=12)) +
+  xlab("(logged) Mono-Ethyl Phthalate Level (ng/mL)") +
+  ylab("Year of Participant Survey") +
+ggtitle("Year of Participant Survey and Logged Phthalate Level")
+
+box_year
+```
+
+## Bivariate for adults:
+```{r}
+## EDUCATION
+noNAs = only_adults %>% filter(!is.na(adultED)) %>% filter(!is.na(adultED))
+                                                                                                         
+box_edu <- ggplot(data = noNAs, design=nhc,
+                      aes(x=log(monoEthyl), y=adultED, fill=adultED)) +
+  scale_fill_brewer(palette="PuBuGn") +
+  geom_boxplot() +
+  theme(text = element_text(size=12)) +
+  xlab("(logged) Mono-Ethyl Phthalate Level (ng/mL)") +
+  ylab("Participant Education Level") +
+ggtitle("Participant Education Level and Logged Phthalate Level")
+
+
+box_edu
+
+## AGE
+noNAs = only_adults %>% filter(!is.na(age)) %>% filter(!is.na(monoEthyl))
+
+age_ordered <- ordered(noNAs$age, levels = c("child", "young adult", "middle-aged", "older adult"))
+
+box_age <- ggplot(data = noNAs, design=nhc,
+                       aes(x=log(monoEthyl), y=age_ordered, fill=age_ordered)) +
+   scale_fill_brewer(palette="PuBuGn") +
+   geom_boxplot() +
+   theme(text = element_text(size=12)) +
+   xlab("(logged) Mono-Ethyl Phthalate Level (ng/mL)") +
+   ylab("Age of Participant") +
+ ggtitle("Age of Participant and Logged Phthalate Level")
+ 
+box_age
+
+## GENDER
+
+noNAs = only_adults %>% filter(!is.na(gender)) %>% filter(!is.na(gender))
+                                                                                                         
+box_gender <- ggplot(data = noNAs, design=nhc,
+                      aes(x=log(monoEthyl), y=gender, fill=gender)) +
+  scale_fill_brewer(palette="PuBuGn") +
+  geom_boxplot() +
+  theme(text = element_text(size=12)) +
+  xlab("(logged) Mono-Ethyl Phthalate Level (ng/mL)") +
+  ylab("Participant Gender") +
+ggtitle("Participant Gender and Logged Phthalate Level")
+
+
+box_gender
+
+## ETHNICITY
+noNAs = only_adults %>% filter(!is.na(ethnicity)) %>% filter(!is.na(ethnicity))
+                                                                                                         
+box_eth <- ggplot(data = noNAs, design=nhc,
+                      aes(x=log(monoEthyl), y=ethnicity, fill=ethnicity)) +
+  scale_fill_brewer(palette="PuBuGn") +
+  geom_boxplot() +
+  theme(text = element_text(size=12)) +
+  xlab("(logged) Mono-Ethyl Phthalate Level (ng/mL)") +
+  ylab("Participant Race/Ethnicity") +
+ggtitle("Participant Race/Ethnicity and Logged Phthalate Level")
+
+
+box_eth
+
+## FPL
+noNAs = only_adults %>% filter(!is.na(fpl)) %>% filter(!is.na(fpl))
+                                                                                                         
+box_fpl <- ggplot(data = noNAs, design=nhc,
+                      aes(x=log(monoEthyl), y=fpl, fill=fpl)) +
+  scale_fill_brewer(palette="PuBuGn") +
+  geom_boxplot() +
+  theme(text = element_text(size=12)) +
+  xlab("(logged) Mono-Ethyl Phthalate Level (ng/mL)") +
+  ylab("Participant Family Income to Poverty Ratio") +
+ggtitle("Participant Family Income to Poverty Ratio and Logged Phthalate Level")
+
+box_fpl
+
+## CITIZENSHIP
+noNAs = only_adults %>% filter(!is.na(citizenship)) %>% filter(!is.na(citizenship))
+                                                                                                         
+box_cit <- ggplot(data = noNAs, design=nhc,
+                      aes(x=log(monoEthyl), y=citizenship, fill=citizenship)) +
+  scale_fill_brewer(palette="PuBuGn") +
+  geom_boxplot() +
+  theme(text = element_text(size=12)) +
+  xlab("(logged) Mono-Ethyl Phthalate Level (ng/mL)") +
+  ylab("Participant Citizenship") +
+ggtitle("Participant Citizenship and Logged Phthalate Level")
+
+box_cit
+
+## YEAR
+noNAs = only_adults %>% filter(!is.na(year)) %>% filter(!is.na(year))
+                                                                                                         
+box_year <- ggplot(data = noNAs, design=nhc,
+                      aes(x=log(monoEthyl), y=year, fill=year)) +
+  scale_fill_brewer(palette="PuBuGn") +
+  geom_boxplot() +
+  theme(text = element_text(size=12)) +
+  xlab("(logged) Mono-Ethyl Phthalate Level (ng/mL)") +
+  ylab("Year of Participant Survey") +
+ggtitle("Year of Participant Survey and Logged Phthalate Level")
+
+box_year
+```
+
+
+
 We can make barcharts. In the example below, we also preview some syntax used for subpopulation analysis.
 ```{r}
 barplt<-svyby(~log(monoEthyl)+RIDAGEYR, ~gender, nhc, na = TRUE, svymean)
@@ -134,7 +347,7 @@ barplot(barplt,beside=TRUE,legend=TRUE)
 ```
 ## We can break the boxplot by a grouping variable. The grouping variable must be a factor.
 ```{r}
-svyboxplot(~log(monoEthyl)~factor(gender), nhc, all.outliers=TRUE)
+svyboxplot(~log(monoEthyl)~factor(year), nhc, all.outliers=TRUE)
 ```
 ## Instead of the density on the y-axis, we can request the count.  Notice the large count of respondents in the last column on the right.  The coding of the ridageyr variable explains this.
 ```{r}
@@ -162,8 +375,25 @@ NHANES$year
 # change the noNAs dataset with each boxplot I create:
 ## one for: refED age gender ethnicity fpl citizenship
 
+## AGE
+noNAs = NHANES %>% filter(!is.na(age)) %>% filter(!is.na(monoEthyl))
+
+Age <- ordered(noNAs$age, levels = c("child", "young adult", "middle-aged", "older adult"))
+
+box_age <- ggplot(data = noNAs, design=nhc,
+                      aes(x=log(monoEthyl), y=Age, fill=Age)) +
+  scale_fill_brewer(palette="PuBuGn") +
+  geom_boxplot() +
+  theme(text = element_text(size=12)) +
+  xlab("(logged) Mono-Ethyl Phthalate Level (ng/mL)") +
+  ylab("Age of Participant") +
+ggtitle("Age of Participant and Logged Phthalate Level")
+
+box_age
+
+
+## YEAR
 noNAs = NHANES %>% filter(!is.na(year)) %>% filter(!is.na(monoEthyl))
-                                                                                                            
 
 box_year <- ggplot(data = noNAs, design=nhc,
                       aes(x=log(monoEthyl), y=year, fill=year)) +
@@ -171,10 +401,24 @@ box_year <- ggplot(data = noNAs, design=nhc,
   geom_boxplot() +
   theme(text = element_text(size=12)) +
   xlab("(logged) Mono-Ethyl Phthalate Level (ng/mL)") +
-  ylab("Year of Participant Survey") +
-ggtitle("Year of Participant Survey and Logged Phthalate Level")
+  ylab("Year of Survey") +
+ggtitle("Year of Survey and Logged Phthalate Level")
 
 box_year
+
+## refED
+noNAs = NHANES %>% filter(!is.na(refED)) %>% filter(!is.na(monoEthyl))
+
+box_refED <- ggplot(data = noNAs, design=nhc,
+                      aes(x=log(monoEthyl), y=refED, fill=refED)) +
+  scale_fill_brewer(palette="PuBuGn") +
+  geom_boxplot() +
+  theme(text = element_text(size=12)) +
+  xlab("(logged) Mono-Ethyl Phthalate Level (ng/mL)") +
+  ylab("Household Reference Person's Education Level") +
+ggtitle("Ref. Person's Edu. Level and Logged Phthalate Level")
+
+box_refED
 ```
 
 
@@ -346,7 +590,6 @@ summ(model_child)
 
 summ(model_child, robust = "HC1") #robust standard errors 
 
-summ(model_child, confint = TRUE, digits = 3) #In many cases, you’ll learn more by looking at confidence intervals than p-values. You can request them from summ. default is 95% CIs
 
 summ(model_child, confint = TRUE, pvals = FALSE) #DROP the p values all together
 
@@ -748,22 +991,48 @@ only_adults_edu <- NHANES %>% select(DMDHREDU,DMDEDUC2)
 model.matrix(~0+., data=only_adults_edu) %>% 
   cor(use="pairwise.complete.obs") %>% 
   ggcorrplot(show.diag=FALSE, type="lower", lab=TRUE, lab_size=2)
+
+only_children_edu <- NHANES %>% select(DMDHREDU,INDFMPIR)
+
+model.matrix(~0+., data=only_children_edu) %>% 
+  cor(use="pairwise.complete.obs") %>% 
+  ggcorrplot(show.diag=FALSE, type="lower", lab=TRUE, lab_size=2)
 ```
 
-## Interactions ??? [possibly to work on later, but prioritize other revisions]
-interact1: race/ethnicity and HHH education [children]
-interact2: race/ethnicity and participant education [adults]
-interact3: gender and ?
+## learning how to make factors and re-leveling
 
 ```{r}
 # model_child <- svyglm(log(monoEthyl)~refED+RIDAGEYR+gender+ethnicity+fpl+citizenship+year, design=subset_child, na.action = na.omit)
 
-# model_adult <- svyglm(log(monoEthyl)~age+gender+ethnicity+fpl+citizenship+adultED+year, design=subset_adult, na.action = na.omit)
+model_adult <- svyglm(log(monoEthyl)~age+gender+ethnicity+fpl+citizenship+adultED+year, design=subset_adult, na.action = na.omit)
 
-## try the interactions
+summary(model_adult)
+
+subset_adult$ethnicity <- as.factor(subset_adult$ethnicity)
+is.factor(subset_adult$ethnicity)
+
+subset_adult$ethnicity <- relevel(subset_adult$ethnicity, ref = "Non-Hispanic White")
+
+
 ```
 
 
+## trying to quantify the missing data:
+Only 1.4% of the data is missing among the children subset and the adult subset.
 
+```{r}
+for_children<-c('year','WTINT2YR','SDMVPSU','SDMVSTRA','DMDHREDU','RIDAGEYR','RIAGENDR','RIDRETH1','INDFMPIR','DMDCITZN','URXMEP')
+for_adults<-c('year','WTINT2YR','SDMVPSU','SDMVSTRA','DMDEDUC2','RIDAGEYR','RIAGENDR','RIDRETH1','INDFMPIR','DMDCITZN','URXMEP')
+children_find<-subset(only_child,select=for_children)
+adults_find<-subset(only_adults,select=for_adults)
+```
+
+```{r}
+vis_miss(children_find, sort_miss = TRUE)
+```
+
+```{r}
+vis_miss(adults_find, sort_miss = TRUE)
+```
 
 

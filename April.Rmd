@@ -259,5 +259,3 @@ summary(fullNHANES$year)
 write.csv(fullNHANES, "NHANES.csv")
 ```
 
-
-
