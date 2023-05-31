@@ -24,6 +24,16 @@ library(forcats)
 library("remotes")
 library("svrepmisc")
 
+#install.packages("skimr")
+library(skimr)
+
+#install.packages("gtsummary")
+library(gtsummary)
+
+#install.packages("srvyr")
+library(srvyr)
+
+
 ## distribution of MONO-ETHYL PHTHALATE
 ## raw
 hist(NHANES$monoEthyl, col = 'skyblue3', border = "white", xlab = 'Mono-ethyl Phthalate (ng/mL)', ylab = 'Frequency', main = 'Distribution of Mono-ethyl Phthalate')
@@ -198,26 +208,32 @@ svyboxplot(~log(monoEthyl)~factor(year), subset_child, all.outliers=TRUE)
 # ////////////
 summary(as.factor(NHANES$gender))
 
-svysd(~RIDAGEYR, design = subset_child, na = TRUE)
-
 svymean(~log(URXMEP), design = subset_child, na = TRUE)
 svysd(~log(URXMEP), design = subset_child, na = TRUE)
 
 svymean(~RIDAGEYR, design = subset_child, na = TRUE)
+svysd(~RIDAGEYR, design = subset_child, na = TRUE)
+
+svymean(~log(URXMEP), design = subset_adult, na = TRUE)
+svysd(~log(URXMEP), design = subset_adult, na = TRUE)
 
 svymean(~RIDAGEYR, design = subset_adult, na = TRUE)
+svysd(~RIDAGEYR, design = subset_adult, na = TRUE)
 
-svymean(~INDFMPIR, nhc, na = TRUE)
+summary(subset_child)
+str(subset_child)
+
 
 ## TABLE
 # descriptive statistics with categorical variables (replace ~fpl with each variable individually)
 
-table2 <- svytable(~age, design = subset_adult)
+table2 <- svytable(~fpl, design = subset_child)
 
 prop.table(table2)
 
 skim(NHANES)
 
+#### this does not account for the weights!!! 
 only_child$ageCont <- only_child$RIDAGEYR
 only_child$LOGmonoEthyl <- log(only_child$URXMEP)
 
@@ -243,13 +259,6 @@ only_child %>%
       "{median} ({p25}, {p75})",                   # line 2: median and IQR
       "{min}, {max}")                              # line 3: min and max
   )
-
-
-
-
-
-
-
 
 
 ## Bivariate analysis for ADULTS:
@@ -361,11 +370,12 @@ box_year
 svyboxplot(~log(monoEthyl)~factor(year), subset_adult, all.outliers=TRUE)
 
 # /////////////
-summary(as.factor(NHANES$gender))
+summary(as.factor(only_child$gender))
 
 svysd(~RIDAGEYR, design = subset_adult, na = TRUE)
 
 svymean(~log(URXMEP), design = subset_adult, na = TRUE)
+svysd(~log(URXMEP), design = subset_adult, na = TRUE)
 
 svymean(~RIDAGEYR, design = subset_adult, na = TRUE)
 
@@ -373,16 +383,17 @@ svymean(~INDFMPIR, nhc, na = TRUE)
 
 # descriptive statistics with categorical variables (replace ~fpl with each variable individually)
 # adults
-table2 <- svytable(~fpl, design = subset_adult)
+table2 <- svytable(~adultED, design = subset_adult)
 
 prop.table(table2)
 
 ## TABLE
-skim(NHANES)
+skim(only_adults)
+
+#### this does not account for the weights!!! 
 
 only_adults$ageCont <- only_adults$RIDAGEYR
 only_adults$LOGmonoEthyl <- log(only_adults$URXMEP)
-
 
 only_adults %>% tabyl(age, gender)
 
@@ -407,7 +418,11 @@ only_adults %>%
   )
 
 
-
+only_adults %>%
+  as_survey(weights = c(WTINT2YR)) %>%
+  group_by(gender) %>%
+  summarize(n = survey_total())
+# I have no idea how to interpret these numbers that get put out,, I think they are weighted though!
 
 
 
