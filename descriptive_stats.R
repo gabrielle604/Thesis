@@ -22,7 +22,6 @@ library(dplyr) # for data wrangling
 library(forcats)
 
 library("remotes")
-library("svrepmisc")
 
 #install.packages("skimr")
 library(skimr)
@@ -131,6 +130,9 @@ box_refED <- ggplot(data = noNAs, design=subset_child,
 
 box_refED
 
+box_refED + scale_fill_discrete(breaks=c("partial college and below","college and beyond"))
+
+
 ## GENDER
 
 noNAs = only_child %>% filter(!is.na(gender)) %>% filter(!is.na(gender))
@@ -145,6 +147,8 @@ box_gender <- ggplot(data = noNAs, design=subset_child,
   ggtitle("Participant Gender and Logged Phthalate Level")
 
 box_gender
+
+box_gender + scale_fill_discrete(breaks=c("male","female"))
 
 ## ETHNICITY
 noNAs = only_child %>% filter(!is.na(ethnicity)) %>% filter(!is.na(ethnicity))
@@ -161,6 +165,8 @@ box_eth <- ggplot(data = noNAs, design=subset_child,
 
 box_eth
 
+box_eth + scale_fill_discrete(breaks=c("Other or Multi","Other Hispanic", "Non-Hispanic Black", "Mexican American", "Non-Hispanic White"))
+
 ## FPL
 noNAs = only_child %>% filter(!is.na(fpl)) %>% filter(!is.na(fpl))
 
@@ -173,7 +179,12 @@ box_fpl <- ggplot(data = noNAs, design=subset_child,
   ylab("Participant Family Income to Poverty Ratio") +
   ggtitle("Participant Family Income to Poverty Ratio and Logged Phthalate Level")
 
-box_fpl
+box_fpl + scale_fill_discrete(breaks=c("family income more than 5x poverty threshold",
+                                       "family income 5x poverty threshold",
+                                       "family income 4x poverty threshold",
+                                       "family income 3x poverty threshold",
+                                       "family income 2x poverty threshold",
+                                       "at poverty threshold"))
 
 ## CITIZENSHIP
 noNAs = only_child %>% filter(!is.na(citizenship)) %>% filter(!is.na(citizenship))
@@ -187,7 +198,7 @@ box_cit <- ggplot(data = noNAs, design=subset_child,
   ylab("Participant Citizenship") +
   ggtitle("Participant Citizenship and Logged Phthalate Level")
 
-box_cit
+box_cit + scale_fill_discrete(breaks=c("not U,S, citizen","birth or naturalization"))
 
 ## YEAR
 noNAs = only_child %>% filter(!is.na(year)) %>% filter(!is.na(year))
@@ -201,7 +212,7 @@ box_year <- ggplot(data = noNAs, design=subset_child,
   ylab("Year of Participant Survey") +
   ggtitle("Year of Participant Survey and Logged Phthalate Level")
 
-box_year
+box_year + scale_fill_discrete(breaks=c("2015","2013","2011","2009","2007","2005","2003","2001"))
 
 svyboxplot(~log(monoEthyl)~factor(year), subset_child, all.outliers=TRUE)
 
@@ -275,8 +286,10 @@ box_edu <- ggplot(data = noNAs, design=subset_adult,
   ylab("Participant Education Level") +
   ggtitle("Participant Education Level and Logged Phthalate Level")
 
-
 box_edu
+
+box_edu + scale_fill_discrete(breaks=c("some college or AA","less than HS/GED",
+                                       "high school grad/GED","college grad or above"))
 
 ## AGE
 noNAs = only_adults %>% filter(!is.na(age)) %>% filter(!is.na(monoEthyl))
@@ -292,7 +305,9 @@ box_age <- ggplot(data = noNAs, design=subset_adult,
   ylab("Age of Participant") +
   ggtitle("Age of Participant and Logged Phthalate Level")
 
-box_age
+box_age 
+
+box_age + scale_fill_discrete(breaks=c("older adult","middle-aged","young adult"))
 
 ## GENDER
 
@@ -310,6 +325,8 @@ box_gender <- ggplot(data = noNAs, design=subset_adult,
 
 box_gender
 
+box_gender + scale_fill_discrete(breaks=c("male","female"))
+
 ## ETHNICITY
 noNAs = only_adults %>% filter(!is.na(ethnicity)) %>% filter(!is.na(ethnicity))
 
@@ -325,6 +342,10 @@ box_eth <- ggplot(data = noNAs, design=subset_adult,
 
 box_eth
 
+box_eth + scale_fill_discrete(breaks=c("Other or Multi","Other Hispanic",
+                                       "Non-Hispanic Black","Mexican American",
+                                       "Non-Hispanic White"))
+
 ## FPL
 noNAs = only_adults %>% filter(!is.na(fpl)) %>% filter(!is.na(fpl))
 
@@ -338,6 +359,13 @@ box_fpl <- ggplot(data = noNAs, design=subset_adult,
   ggtitle("Participant Family Income to Poverty Ratio and Logged Phthalate Level")
 
 box_fpl
+
+box_fpl + scale_fill_discrete(breaks=c("family income more than 5x poverty threshold",
+                                       "family income 5x poverty threshold",
+                                       "family income 4x poverty threshold",
+                                       "family income 3x poverty threshold",
+                                       "family income 2x poverty threshold",
+                                       "at poverty threshold"))
 
 ## CITIZENSHIP
 noNAs = only_adults %>% filter(!is.na(citizenship)) %>% filter(!is.na(citizenship))
@@ -353,6 +381,8 @@ box_cit <- ggplot(data = noNAs, design=subset_adult,
 
 box_cit
 
+box_cit + scale_fill_discrete(breaks=c("not U,S, citizen", "birth or naturalization"))
+
 ## YEAR
 noNAs = only_adults %>% filter(!is.na(year)) %>% filter(!is.na(year))
 
@@ -366,6 +396,9 @@ box_year <- ggplot(data = noNAs, design=subset_adult,
   ggtitle("Year of Participant Survey and Logged Phthalate Level")
 
 box_year
+
+box_year + scale_fill_discrete(breaks=c("2015","2013","2011","2009","2007","2005","2003","2001"))
+
 
 svyboxplot(~log(monoEthyl)~factor(year), subset_adult, all.outliers=TRUE)
 

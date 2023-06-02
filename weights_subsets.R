@@ -22,7 +22,6 @@ library(dplyr) # for data wrangling
 library(forcats)
 
 library("remotes")
-library("svrepmisc")
 
 ## Load the data
 NHANES <- read_csv(here("cleaned_data","NHANES.csv"))

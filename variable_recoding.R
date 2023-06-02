@@ -21,8 +21,7 @@ library(survey) # for using survey weights
 library(dplyr) # for data wrangling
 library(forcats)
 
-library("remotes")
-library("svrepmisc")
+library(remotes)
 
 ## LOAD THE DATASET 
 
