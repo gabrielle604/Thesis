@@ -110,25 +110,28 @@ forest_adult <- plot_summs(
                                   College Grad or Above (ref)" = "adultEDsome college or AA",
                          
                          "Year of Survey: 2003
-                              Year 2001 (ref)" = "year2003",
+                              Year 1999 (ref)" = "year2003",
                          
                          "Year of Survey: 2005
-                              Year 2001 (ref)" = "year2005",
+                              Year 1999 (ref)" = "year2005",
                          
                          "Year of Survey: 2007
-                              Year 2001 (ref)" = "year2007",
+                              Year 1999 (ref)" = "year2007",
                          
                          "Year of Survey: 2009
-                              Year 2001 (ref)" = "year2009",
+                              Year 1999 (ref)" = "year2009",
                          
                          "Year of Survey: 2011
-                              Year 2001 (ref)" = "year2011",
+                              Year 1999 (ref)" = "year2011",
                          
                          "Year of Survey: 2013
-                              Year 2001 (ref)" = "year2013",
+                              Year 1999 (ref)" = "year2013",
                          
                          "Year of Survey: 2015
-                              Year 2001 (ref)" = "year2015"),
+                              Year 1999 (ref)" = "year2015",
+                         
+                         "Year of Survey: 2017
+                              Year 1999 (ref)" = "year2017"),
   
   scale = TRUE, robust = TRUE)
 
@@ -219,25 +222,28 @@ forest_child <- plot_summs(
                                  U.S. Citizen by birth or naturalization (ref)" = "citizenshipnot U,S, citizen",
                          
                          "Year of Survey: 2003
-                              Year 2001 (ref)" = "year2003",
+                              Year 1999 (ref)" = "year2003",
                          
                          "Year of Survey: 2005
-                              Year 2001 (ref)" = "year2005",
+                              Year 1999 (ref)" = "year2005",
                          
                          "Year of Survey: 2007
-                              Year 2001 (ref)" = "year2007",
+                              Year 1999 (ref)" = "year2007",
                          
                          "Year of Survey: 2009
-                              Year 2001 (ref)" = "year2009",
+                              Year 1999 (ref)" = "year2009",
                          
                          "Year of Survey: 2011
-                              Year 2001 (ref)" = "year2011",
+                              Year 1999 (ref)" = "year2011",
                          
                          "Year of Survey: 2013
-                              Year 2001 (ref)" = "year2013",
+                              Year 1999 (ref)" = "year2013",
                          
                          "Year of Survey: 2015
-                              Year 2001 (ref)" = "year2015"),
+                              Year 1999 (ref)" = "year2015",
+                         
+                         "Year of Survey: 2017
+                              Year 1999 (ref)" = "year2017"),
   
   scale = TRUE, robust = TRUE)
 
