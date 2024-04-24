@@ -42,6 +42,7 @@ summary(lm(log(monoEthyl)~age+gender+ethnicity+fpl+citizenship+adultED+refED+yea
 # You can then use your favorite correlation-plot library. I personally like ggcorrplot for its ggplot2 compatibility.
 
 # Source: https://stackoverflow.com/questions/52554336/plot-the-equivalent-of-correlation-matrix-for-factors-categorical-data-and-mi
+#this gives errors... not running for now
 only_adults_edu <- only_adults %>% select(adultED,refED)
 
 model.matrix(~0+., data=only_adults_edu) %>% 

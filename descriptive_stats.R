@@ -35,28 +35,28 @@ library(srvyr)
 
 ## distribution of MONO-ETHYL PHTHALATE
 ## raw
-hist(NHANES$monoEthyl, col = 'skyblue3', border = "white", xlab = 'Mono-ethyl Phthalate (ng/mL)', ylab = 'Frequency', main = 'Distribution of Mono-ethyl Phthalate')
+hist(NHANES$monoEthyl, col = 'skyblue3', border = "white", xlab = 'Mono-ethyl Phthalate (ng/mL)', ylab = 'Frequency', main = 'Distribution of Mono-ethyl Phthalate', cex.main = 1.5, cex.lab = 1)
 
 ## raw, just children
-hist(only_child$monoEthyl, col = 'skyblue3', border = "white", breaks = 50, xlab = 'Mono-ethyl Phthalate (ng/mL)', ylab = 'Frequency', main = 'Distribution of Mono-ethyl Phthalate')
+hist(only_child$monoEthyl, col = 'skyblue3', border = "white", breaks = 50, xlab = 'Mono-ethyl Phthalate (ng/mL)', ylab = 'Frequency', main = 'Distribution of Mono-ethyl Phthalate', cex.main = 1.5, cex.lab = 1)
 
 ## raw, just adults
-hist(only_adults$monoEthyl, col = 'skyblue3', border = "white", breaks = 50, xlab = 'Mono-ethyl Phthalate (ng/mL)', ylab = 'Frequency', main = 'Distribution of Mono-ethyl Phthalate')
+hist(only_adults$monoEthyl, col = 'skyblue3', border = "white", breaks = 50, xlab = 'Mono-ethyl Phthalate (ng/mL)', ylab = 'Frequency', main = 'Distribution of Mono-ethyl Phthalate', cex.main = 1.5, cex.lab = 1)
 
 ## dotchart
 dotchart(only_child$monoEthyl, col = 'skyblue3', col.line = "transparent", xlab = 'Mono-ethyl Phthalate (ng/mL)', ylab = 'Frequency', main = 'Distribution of Mono-ethyl Phthalate')
-
+## bar graph
 ggplot(only_child,aes(monoEthyl))+geom_dotplot(binwidth=100)+theme_minimal()
 
 
 ## logged
-hist(log(NHANES$URXMEP), col = 'skyblue3', border = "white", xlab = '(Logged) Mono-ethyl Phthalate (ng/mL)', ylab = 'Frequency', main = 'Distribution of Logged Mono-ethyl Phthalate')
+hist(log(NHANES$URXMEP), col = 'skyblue3', border = "white", xlab = '(Logged) Mono-ethyl Phthalate (ng/mL)', ylab = 'Frequency', main = 'Distribution of Logged Mono-ethyl Phthalate', cex.main = 1.5, cex.lab = 1)
 
 ## logged, just children
-hist(log(only_child$URXMEP), col = 'skyblue3', border = "white", xlab = '(Logged) Mono-ethyl Phthalate (ng/mL)', ylab = 'Frequency', main = 'Distribution of Logged Mono-ethyl Phthalate')
+hist(log(only_child$URXMEP), col = 'skyblue3', border = "white", xlab = '(Logged) Mono-ethyl Phthalate (ng/mL)', ylab = 'Frequency', main = 'Distribution of Logged Mono-ethyl Phthalate', cex.main = 1.5, cex.lab = 1)
 
 ## logged, just adults
-hist(log(only_adults$URXMEP), col = 'skyblue3', border = "white", xlab = '(Logged) Mono-ethyl Phthalate (ng/mL)', ylab = 'Frequency', main = 'Distribution of Logged Mono-ethyl Phthalate')
+hist(log(only_adults$URXMEP), col = 'skyblue3', border = "white", xlab = '(Logged) Mono-ethyl Phthalate (ng/mL)', ylab = 'Frequency', main = 'Distribution of Logged Mono-ethyl Phthalate', cex.main = 1.5, cex.lab = 1)
 
 
 ## density plot
@@ -212,7 +212,7 @@ box_year <- ggplot(data = noNAs, design=subset_child,
   ylab("Year of Participant Survey") +
   ggtitle("Year of Participant Survey and Logged Phthalate Level")
 
-box_year + scale_fill_discrete(breaks=c("2015","2013","2011","2009","2007","2005","2003","2001"))
+box_year + scale_fill_discrete(breaks=c("2017","2015","2013","2011","2009","2007","2005","2003","2001", "1999"))
 
 svyboxplot(~log(monoEthyl)~factor(year), subset_child, all.outliers=TRUE)
 
@@ -238,7 +238,7 @@ str(subset_child)
 ## TABLE
 # descriptive statistics with categorical variables (replace ~fpl with each variable individually)
 
-table2 <- svytable(~fpl, design = subset_child)
+table2 <- svytable(~refED, design = subset_child)
 
 prop.table(table2)
 
@@ -416,7 +416,7 @@ svymean(~INDFMPIR, nhc, na = TRUE)
 
 # descriptive statistics with categorical variables (replace ~fpl with each variable individually)
 # adults
-table2 <- svytable(~adultED, design = subset_adult)
+table2 <- svytable(~year, design = subset_adult)
 
 prop.table(table2)
 
@@ -471,7 +471,7 @@ model_child_bivariate <- svyglm(log(monoEthyl)~year, design=subset_child, na.act
 summ(model_child_bivariate, confint = TRUE, pvals = TRUE)
 
 ## ADULTS
-model_adult_bivariate <- svyglm(log(monoEthyl)~year, design=subset_adult, na.action = na.omit)
+model_adult_bivariate <- svyglm(log(monoEthyl)~adultED, design=subset_adult, na.action = na.omit)
 
 summ(model_adult_bivariate, confint = TRUE, pvals = TRUE)
 

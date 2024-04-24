@@ -25,11 +25,17 @@ library(remotes)
 
 ## LOAD THE DATASET 
 
-# Years 2001-2016
+# Years 1999-2018
 ## demographics file
 ## phthalates, urine file
 
 # Downloaded from CDC National Health and Examination Survey, [NHANES Questionnaires, Datasets, and Related Documentation](https://wwwn.cdc.gov/nchs/nhanes/Default.aspx)
+
+# 1999-2000
+demographics00 <- read.xport(here("data","DEMO_1999.XPT"))
+phthalates00 <- read.xport(here("data","PHPYPA_1999.XPT"))
+nhanes00 <- merge(phthalates00,demographics00,all.x=T)
+
 
 # 2001-2002
 demographics01 <- read.xport(here("data","DEMO_B_2001_2002.XPT"))
@@ -71,8 +77,14 @@ demographics15 <- read.xport(here("data","DEMO_I_2015_2016.XPT"))
 phthalates15 <- read.xport(here("data","PHTHTE_I_2015_2016.XPT"))
 nhanes15 <- merge(phthalates15,demographics15,all.x=T)
 
+# 2017-2018
+demographics17 <- read.xport(here("data","DEMO_J_2017.XPT"))
+phthalates17 <- read.xport(here("data","PHTHTE_J_2017.XPT"))
+nhanes17 <- merge(phthalates17,demographics17,all.x=T)
+
 
 ## Add a column with the YEAR to each data file:
+nhanes00$year <- 1999
 nhanes01$year <- 2001
 nhanes03$year <- 2003
 nhanes05$year <- 2005
@@ -81,6 +93,7 @@ nhanes09$year <- 2009
 nhanes11$year <- 2011
 nhanes13$year <- 2013
 nhanes15$year <- 2015
+nhanes17$year <- 2017
 
 
 ## Choose the variables to select from each data file
@@ -91,6 +104,7 @@ nhanes15$year <- 2015
 # strata = strata-level sampling unit ("SDMVSTRA")
 
 var<-c('year','WTINT2YR','SDMVPSU','SDMVSTRA','DMDEDUC2','DMDHREDU','RIDAGEYR','RIAGENDR','RIDRETH1','INDFMPIR','DMDCITZN','URXMEP')
+nhanes00s<-subset(nhanes00,select=var)
 nhanes01s<-subset(nhanes01,select=var)
 nhanes03s<-subset(nhanes03,select=var)
 nhanes05s<-subset(nhanes05,select=var)
@@ -99,9 +113,12 @@ nhanes09s<-subset(nhanes09,select=var)
 nhanes11s<-subset(nhanes11,select=var)
 nhanes13s<-subset(nhanes13,select=var)
 nhanes15s<-subset(nhanes15,select=var)
+# need to rename 2017 DMDHREDZ to the variable name used in all the other years, DMDHREDU
+colnames(nhanes17)[colnames(nhanes17) == "DMDHREDZ"] <- "DMDHREDU"
+nhanes17s<-subset(nhanes17,select=var)
 
 ## Create one dataset for NHANES demographics and phthalates, year 2001-2016
-fullNHANES <- rbind(nhanes01s,nhanes03s,nhanes05s,nhanes07s,nhanes09s,nhanes11s,nhanes13s,nhanes15s)
+fullNHANES <- rbind(nhanes00s,nhanes01s,nhanes03s,nhanes05s,nhanes07s,nhanes09s,nhanes11s,nhanes13s,nhanes15s,nhanes17s)
 
 ## Copy and rename variables so they are more intuitive. 
 
@@ -204,24 +221,25 @@ summary(fullNHANES$fpl)
 
 
 ## Year of survey
-
-fullNHANES$year = factor(ifelse(fullNHANES$year ==2001, "2001",
-                                ifelse(fullNHANES$year ==2003, "2003",
-                                       ifelse(fullNHANES$year ==2005, "2005",
-                                              ifelse(fullNHANES$year ==2007, "2007",
-                                                     ifelse(fullNHANES$year ==2009, "2009",
-                                                            ifelse(fullNHANES$year ==2011, "2011",
-                                                                   ifelse(fullNHANES$year ==2013, "2013",
-                                                                          ifelse(fullNHANES$year ==2015, "2015", NA)))))))),
-                         levels=c("2001","2003", "2005", "2007", "2009","2011", "2013", "2015"))
+fullNHANES$year <- factor(ifelse(fullNHANES$year == 1999, "1999",
+                                 ifelse(fullNHANES$year == 2001, "2001",
+                                        ifelse(fullNHANES$year == 2003, "2003",
+                                               ifelse(fullNHANES$year == 2005, "2005",
+                                                      ifelse(fullNHANES$year == 2007, "2007",
+                                                             ifelse(fullNHANES$year == 2009, "2009",
+                                                                    ifelse(fullNHANES$year == 2011, "2011",
+                                                                           ifelse(fullNHANES$year == 2013, "2013",
+                                                                                  ifelse(fullNHANES$year == 2015, "2015",
+                                                                                         ifelse(fullNHANES$year == 2017, "2017", NA)))))))))),
+                          levels = c("1999", "2001", "2003", "2005", "2007", "2009", "2011", "2013", "2015", "2017"))
 summary(fullNHANES$year)
 
 is.factor(fullNHANES$year)
 
-fullNHANES$year <- relevel(fullNHANES$year, ref = "2001")
+fullNHANES$year <- relevel(fullNHANES$year, ref = "1999")
 
 
 ## Save a dataset with renamed, recategorized variables, and only the variables I am using in my analysis
 
-# [don't need to write a new csv]
-# write.csv(fullNHANES, "NHANES.csv")
+# write a new csv
+write.csv(fullNHANES, "NHANES.csv")

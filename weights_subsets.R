@@ -33,7 +33,7 @@ NHANES$year <- as.factor(NHANES$year)
 is.factor(NHANES$year)
 
 NHANES$ethnicity <- relevel(NHANES$ethnicity, ref = "Non-Hispanic White")
-NHANES$year <- relevel(NHANES$year, ref = "2001")
+NHANES$year <- relevel(NHANES$year, ref = "1999")
 
 
 
