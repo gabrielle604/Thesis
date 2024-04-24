@@ -475,7 +475,7 @@ model_adult_bivariate <- svyglm(log(monoEthyl)~adultED, design=subset_adult, na.
 
 summ(model_adult_bivariate, confint = TRUE, pvals = TRUE)
 
-
+ 
 
 
 
