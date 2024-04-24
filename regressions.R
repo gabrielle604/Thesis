@@ -149,6 +149,9 @@ forest_adult
 ## CHILDREN
 # what's missing
 vis_miss(only_child, sort_miss = TRUE)
+# check this but get rid of the adult variables:
+only_child_x <- select(only_child, fpl, monoEthyl, refED, citizenship, year, age, gender, psu, persWeight, strata, ethnicity)
+vis_miss(only_child_x, sort_miss = TRUE)
 
 # regression
 model_child <- svyglm(log(monoEthyl)~refED+RIDAGEYR+gender+ethnicity+fpl+citizenship+year, design=subset_child, na.action = na.omit)
