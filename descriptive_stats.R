@@ -471,7 +471,7 @@ model_child_bivariate <- svyglm(log(monoEthyl)~year, design=subset_child, na.act
 summ(model_child_bivariate, confint = TRUE, pvals = TRUE)
 
 ## ADULTS
-model_adult_bivariate <- svyglm(log(monoEthyl)~adultED, design=subset_adult, na.action = na.omit)
+model_adult_bivariate <- svyglm(log(monoEthyl)~year, design=subset_adult, na.action = na.omit)
 
 summ(model_adult_bivariate, confint = TRUE, pvals = TRUE)
 
