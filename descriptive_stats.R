@@ -39,9 +39,53 @@ hist(NHANES$monoEthyl, col = 'skyblue3', border = "white", xlab = 'Mono-ethyl Ph
 
 ## raw, just children
 hist(only_child$monoEthyl, col = 'skyblue3', border = "white", breaks = 50, xlab = 'Mono-ethyl Phthalate (ng/mL)', ylab = 'Frequency', main = 'Distribution of Mono-ethyl Phthalate', cex.main = 1.5, cex.lab = 1)
+## [reviewer comment - break the y axis for better visibility]
+# Create a data frame for the histogram data
+hist_data <- data.frame(monoEthyl = only_child$monoEthyl)
+# Create a ggplot object
+ggplot(hist_data, aes(x = monoEthyl)) +
+  # Create the histogram with log-scaled y-axis
+  geom_histogram(binwidth = 50, fill = 'white', color = 'skyblue3') +
+  # Add labels and title
+  labs(x = 'Mono-ethyl Phthalate (ng/mL)', y = 'Frequency', 
+       title = 'Distribution of Mono-ethyl Phthalate', 
+       cex.main = 1.5, cex.lab = 1) +
+  # Increase the size of title and labels
+  theme(plot.title = element_text(size = 18, face = "bold"),
+        axis.title = element_text(size = 14, face = "bold"),
+        panel.background = element_rect(fill = "white"),
+        panel.grid.major = element_blank(),                    
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(color = "black")) +
+  # Use log scale for the y-axis
+  scale_y_continuous(trans = 'log10', breaks = c(1, 10, 100))
 
 ## raw, just adults
 hist(only_adults$monoEthyl, col = 'skyblue3', border = "white", breaks = 50, xlab = 'Mono-ethyl Phthalate (ng/mL)', ylab = 'Frequency', main = 'Distribution of Mono-ethyl Phthalate', cex.main = 1.5, cex.lab = 1)
+
+## [reviewer comment - break the y axis for better visibility]
+# Create a data frame for the histogram data
+hist_data <- data.frame(monoEthyl = only_adults$monoEthyl)
+# Create a ggplot object
+ggplot(hist_data, aes(x = monoEthyl)) +
+  # Create the histogram with log-scaled y-axis
+  geom_histogram(binwidth = 50, fill = 'white', color = 'skyblue3') +
+  # Add labels and title
+  labs(x = 'Mono-ethyl Phthalate (ng/mL)', y = 'Frequency', 
+       title = 'Distribution of Mono-ethyl Phthalate', 
+       cex.main = 1.5, cex.lab = 1) +
+  # Increase the size of title and labels
+  theme(plot.title = element_text(size = 18, face = "bold"),
+        axis.title = element_text(size = 14, face = "bold"),
+        panel.background = element_rect(fill = "white"),
+        panel.grid.major = element_blank(),                    
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(color = "black")) +
+  # Use log scale for the y-axis
+  scale_y_continuous(trans = 'log10', breaks = c(1, 10, 100))
+
+
+
 
 ## dotchart
 dotchart(only_child$monoEthyl, col = 'skyblue3', col.line = "transparent", xlab = 'Mono-ethyl Phthalate (ng/mL)', ylab = 'Frequency', main = 'Distribution of Mono-ethyl Phthalate')
